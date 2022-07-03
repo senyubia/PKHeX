@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using static PKHeX.Core.GameVersion;
 
 namespace PKHeX.Core.Searching;
@@ -93,23 +94,23 @@ public sealed class SearchSettings
         return result;
     }
 
-        private DateTime GetRevisedTime(SlotCache arg)
-        {
-            var src = arg.Source;
-            if (src is not SlotInfoFile f)
-                return DateTime.Now;
-            return File.GetLastWriteTimeUtc(f.Path);
-        }
+    private DateTime GetRevisedTime(SlotCache arg)
+    {
+        var src = arg.Source;
+        if (src is not SlotInfoFile f)
+            return DateTime.Now;
+        return File.GetLastWriteTimeUtc(f.Path);
+    }
 
-        private IEnumerable<PKM> SearchInner(IEnumerable<PKM> list)
+    private IEnumerable<PKM> SearchInner(IEnumerable<PKM> list)
+    {
+        foreach (var pk in list)
         {
-            foreach (var pk in list)
-            {
-                if (!IsSearchMatch(pk))
-                    continue;
-                yield return pk;
-            }
+            if (!IsSearchMatch(pk))
+                continue;
+            yield return pk;
         }
+    }
 
     private IEnumerable<SlotCache> SearchInner(IEnumerable<SlotCache> list)
     {
