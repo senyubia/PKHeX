@@ -182,9 +182,7 @@
             // 
             // Menu_SearchBoxes
             // 
-            this.Menu_SearchBoxes.Checked = true;
             this.Menu_SearchBoxes.CheckOnClick = true;
-            this.Menu_SearchBoxes.CheckState = System.Windows.Forms.CheckState.Checked;
             this.Menu_SearchBoxes.Name = "Menu_SearchBoxes";
             this.Menu_SearchBoxes.Size = new System.Drawing.Size(198, 22);
             this.Menu_SearchBoxes.Text = "Search Within Boxes";
@@ -200,9 +198,7 @@
             // 
             // Menu_SearchBackups
             // 
-            this.Menu_SearchBackups.Checked = true;
             this.Menu_SearchBackups.CheckOnClick = true;
-            this.Menu_SearchBackups.CheckState = System.Windows.Forms.CheckState.Checked;
             this.Menu_SearchBackups.Name = "Menu_SearchBackups";
             this.Menu_SearchBackups.Size = new System.Drawing.Size(198, 22);
             this.Menu_SearchBackups.Text = "Search Within Backups";

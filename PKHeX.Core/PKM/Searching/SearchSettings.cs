@@ -83,25 +83,33 @@ public sealed class SearchSettings
         BatchFilters = StringInstruction.GetFilters(BatchInstructions).ToArray();
         var result = SearchInner(list);
 
-        if (SearchClones != CloneDetectionMethod.None)
-        {
-            var method = SearchUtil.GetCloneDetectMethod(SearchClones);
-            string GetHash(SlotCache z) => method(z.Entity);
-            result = SearchUtil.GetExtraClones(result, GetHash);
-        }
+            if (SearchClones != CloneDetectionMethod.None)
+            {
+                var method = SearchUtil.GetCloneDetectMethod(SearchClones);
+                string GetHash(SlotCache z) => method(z.Entity);
+                result = SearchUtil.GetExtraClones(result.OrderByDescending(GetRevisedTime), GetHash);
+            }
 
         return result;
     }
 
-    private IEnumerable<PKM> SearchInner(IEnumerable<PKM> list)
-    {
-        foreach (var pk in list)
+        private DateTime GetRevisedTime(SlotCache arg)
         {
-            if (!IsSearchMatch(pk))
-                continue;
-            yield return pk;
+            var src = arg.Source;
+            if (src is not SlotInfoFile f)
+                return DateTime.Now;
+            return File.GetLastWriteTimeUtc(f.Path);
         }
-    }
+
+        private IEnumerable<PKM> SearchInner(IEnumerable<PKM> list)
+        {
+            foreach (var pk in list)
+            {
+                if (!IsSearchMatch(pk))
+                    continue;
+                yield return pk;
+            }
+        }
 
     private IEnumerable<SlotCache> SearchInner(IEnumerable<SlotCache> list)
     {

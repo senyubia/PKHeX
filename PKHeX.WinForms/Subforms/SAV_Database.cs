@@ -151,8 +151,17 @@ public partial class SAV_Database : Form
             return;
         }
 
-        var entry = Results[index];
-        var pk = entry.Entity;
+            var confirmation = MessageBox.Show(
+                "Are you sure you want to delete this Pokémon? This action is irreversible.",
+                "Prompt",
+                MessageBoxButtons.YesNo);
+            if (confirmation == DialogResult.No)
+            {
+                return;
+            }
+
+            var entry = Results[index];
+            var pk = entry.Entity;
 
         if (entry.Source is SlotInfoFile f)
         {
@@ -357,13 +366,29 @@ public partial class SAV_Database : Form
             pk.ForcePartyData();
         }
 
-        try
-        {
-            while (!IsHandleCreated) { }
-            BeginInvoke(new MethodInvoker(() => SetResults(RawDB)));
+            try
+            {
+                while (!IsHandleCreated) { }
+
+                IEnumerable<SlotCache> toShow = RawDB;
+
+                if (!Menu_SearchBoxes.Checked)
+                {
+                    toShow = toShow.Where(e => e.SAV != SAV);
+                }
+                if (!Menu_SearchDatabase.Checked)
+                {
+                    toShow = toShow.Where(e => !IsIndividualFilePKMDB(e));
+                }
+                if (!Menu_SearchBackups.Checked)
+                {
+                    toShow = toShow.Where(e => !IsBackupSaveFile(e));
+                }
+
+                BeginInvoke(new MethodInvoker(() => SetResults(toShow.ToList())));
+            }
+            catch { /* Window Closed? */ }
         }
-        catch { /* Window Closed? */ }
-    }
 
     private static List<SlotCache> LoadPKMSaves(string pkmdb, SaveFile sav, List<SearchFolderDetail> otherPaths, bool otherDeep)
     {
@@ -676,14 +701,14 @@ public partial class SAV_Database : Form
             if (!File.Exists(path))
                 continue;
 
-            try { File.Delete(path); ++deleted; }
-            catch (Exception ex) { WinFormsUtil.Error(MsgDBDeleteCloneFail + Environment.NewLine + ex.Message + Environment.NewLine + path); }
-        }
-
-        var boxClear = new BoxManipClearDuplicate<string>(BoxManipType.DeleteClones, pk => SearchUtil.GetCloneDetectMethod(method)(pk));
-        var param = new BoxManipParam(0, SAV.BoxCount);
-        int count = boxClear.Execute(SAV, param);
-        deleted += count;
+                try { File.Delete(path); ++deleted; }
+                catch (Exception ex) { WinFormsUtil.Error(MsgDBDeleteCloneFail + Environment.NewLine + ex.Message + Environment.NewLine + path); }
+            }
+            // TODO: dont delete from savefile boxes
+            //var boxClear = new BoxManipClearDuplicate<string>(BoxManipType.DeleteClones, pk => SearchUtil.GetCloneDetectMethod(method)(pk));
+            //var param = new BoxManipParam(0, SAV.BoxCount);
+            //int count = boxClear.Execute(SAV, param);
+            //deleted += count;
 
         if (deleted == 0)
         { WinFormsUtil.Alert(MsgDBDeleteCloneNone); return; }
