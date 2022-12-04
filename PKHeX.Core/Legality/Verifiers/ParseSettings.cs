@@ -1,8 +1,12 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PKHeX.Core;
 
+/// <summary>
+/// Settings for Parsing Legality
+/// </summary>
+/// <remarks><see cref="LegalityAnalysis"/></remarks>
 public static class ParseSettings
 {
     internal static ITrainerInfo ActiveTrainer { get; set; } = new SimpleTrainerInfo(GameVersion.Any) { OT = string.Empty, Language = -1 };
@@ -36,8 +40,8 @@ public static class ParseSettings
 
     public static IReadOnlyList<string> MoveStrings { get; private set; } = Util.GetMovesList(GameLanguage.DefaultLanguage);
     public static IReadOnlyList<string> SpeciesStrings { get; private set; } = Util.GetSpeciesList(GameLanguage.DefaultLanguage);
-    public static string GetMoveName(int move) => (uint)move >= MoveStrings.Count ? LegalityCheckStrings.L_AError : MoveStrings[move];
-    public static IEnumerable<string> GetMoveNames(IEnumerable<int> moves) => moves.Select(m => (uint)m >= MoveStrings.Count ? LegalityCheckStrings.L_AError : MoveStrings[m]);
+    public static string GetMoveName(ushort move) => move >= MoveStrings.Count ? LegalityCheckStrings.L_AError : MoveStrings[move];
+    public static IEnumerable<string> GetMoveNames(IEnumerable<ushort> moves) => moves.Select(m => m >= MoveStrings.Count ? LegalityCheckStrings.L_AError : MoveStrings[m]);
 
     public static void ChangeLocalizationStrings(IReadOnlyList<string> moves, IReadOnlyList<string> species)
     {
@@ -86,6 +90,8 @@ public static class ParseSettings
             _ => false,
         };
     }
+
+    internal static bool IgnoreTransferIfNoTracker => Gen8TransferTrackerNotPresent == Severity.Invalid;
 
     public static void InitFromSettings(IParseSettings settings)
     {

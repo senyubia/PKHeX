@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -42,15 +42,16 @@ public partial class SAV_PokedexXY : Form
     private readonly CheckBox[] CL;
     private readonly Zukan6XY Zukan;
     private bool editing;
-    private int species = -1;
+    private ushort species = ushort.MaxValue;
 
     private void ChangeCBSpecies(object sender, EventArgs e)
     {
-        if (editing) return;
+        if (editing)
+            return;
         SetEntry();
 
         editing = true;
-        species = (int)CB_Species.SelectedValue;
+        species = (ushort)WinFormsUtil.GetIndex(CB_Species);
         LB_Species.SelectedIndex = species - 1; // Since we don't allow index0 in combobox, everything is shifted by 1
         LB_Species.TopIndex = LB_Species.SelectedIndex;
         GetEntry();
@@ -59,12 +60,13 @@ public partial class SAV_PokedexXY : Form
 
     private void ChangeLBSpecies(object sender, EventArgs e)
     {
-        if (editing) return;
+        if (editing)
+            return;
         SetEntry();
 
         editing = true;
-        species = LB_Species.SelectedIndex + 1;
-        CB_Species.SelectedValue = species;
+        species = (ushort)(LB_Species.SelectedIndex + 1);
+        CB_Species.SelectedValue = (int)species;
         GetEntry();
         editing = false;
     }
@@ -144,7 +146,7 @@ public partial class SAV_PokedexXY : Form
         int f = DexFormUtil.GetDexFormIndexXY(species, fc);
         if (f < 0)
             return;
-        string[] forms = FormConverter.GetFormList(species, GameInfo.Strings.types, GameInfo.Strings.forms, Main.GenderSymbols, SAV.Generation);
+        string[] forms = FormConverter.GetFormList(species, GameInfo.Strings.types, GameInfo.Strings.forms, Main.GenderSymbols, SAV.Context);
         if (forms.Length < 1)
             return;
 
@@ -162,7 +164,7 @@ public partial class SAV_PokedexXY : Form
 
     private void SetEntry()
     {
-        if (species < 0)
+        if (species > 721)
             return;
 
         Zukan.SetCaught(species, CP[0].Checked);
@@ -340,7 +342,9 @@ public partial class SAV_PokedexXY : Form
             return;
 
         // Only allow one form to be displayed if the user sets a new display value
-        if (e.NewValue != CheckState.Checked) return;
+        if (e.NewValue != CheckState.Checked)
+            return;
+
         for (int i = 0; i < CLB_FormDisplayed.Items.Count; i++)
         {
             if (i != e.Index)

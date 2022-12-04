@@ -26,10 +26,10 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     protected PKM(byte[] data) => Data = data;
     protected PKM(int size) => Data = new byte[size];
 
-    public virtual byte[] EncryptedPartyData => Encrypt().AsSpan()[..SIZE_PARTY].ToArray();
-    public virtual byte[] EncryptedBoxData => Encrypt().AsSpan()[..SIZE_STORED].ToArray();
-    public virtual byte[] DecryptedPartyData => Write().AsSpan()[..SIZE_PARTY].ToArray();
-    public virtual byte[] DecryptedBoxData => Write().AsSpan()[..SIZE_STORED].ToArray();
+    public virtual byte[] EncryptedPartyData => Encrypt().AsSpan(0, SIZE_PARTY).ToArray();
+    public virtual byte[] EncryptedBoxData => Encrypt().AsSpan(0, SIZE_STORED).ToArray();
+    public virtual byte[] DecryptedPartyData => Write().AsSpan(0, SIZE_PARTY).ToArray();
+    public virtual byte[] DecryptedBoxData => Write().AsSpan(0, SIZE_STORED).ToArray();
 
     /// <summary>
     /// Rough indication if the data is junk or not.
@@ -52,7 +52,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     }
 
     // Surface Properties
-    public abstract int Species { get; set; }
+    public abstract ushort Species { get; set; }
     public abstract string Nickname { get; set; }
     public abstract int HeldItem { get; set; }
     public abstract int Gender { get; set; }
@@ -60,7 +60,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     public virtual int StatNature { get => Nature; set => Nature = value; }
     public abstract int Ability { get; set; }
     public abstract int CurrentFriendship { get; set; }
-    public abstract int Form { get; set; }
+    public abstract byte Form { get; set; }
     public abstract bool IsEgg { get; set; }
     public abstract bool IsNicknamed { get; set; }
     public abstract uint EXP { get; set; }
@@ -71,10 +71,10 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     public abstract int Met_Level { get; set; }
 
     // Battle
-    public abstract int Move1 { get; set; }
-    public abstract int Move2 { get; set; }
-    public abstract int Move3 { get; set; }
-    public abstract int Move4 { get; set; }
+    public abstract ushort Move1 { get; set; }
+    public abstract ushort Move2 { get; set; }
+    public abstract ushort Move3 { get; set; }
+    public abstract ushort Move4 { get; set; }
     public abstract int Move1_PP { get; set; }
     public abstract int Move2_PP { get; set; }
     public abstract int Move3_PP { get; set; }
@@ -220,17 +220,17 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
         }
     }
 
-    public virtual int RelearnMove1 { get => 0; set { } }
-    public virtual int RelearnMove2 { get => 0; set { } }
-    public virtual int RelearnMove3 { get => 0; set { } }
-    public virtual int RelearnMove4 { get => 0; set { } }
+    public virtual ushort RelearnMove1 { get => 0; set { } }
+    public virtual ushort RelearnMove2 { get => 0; set { } }
+    public virtual ushort RelearnMove3 { get => 0; set { } }
+    public virtual ushort RelearnMove4 { get => 0; set { } }
 
     // Exposed but not Present in all
     public abstract int CurrentHandler { get; set; }
 
     // Maximums
-    public abstract int MaxMoveID { get; }
-    public abstract int MaxSpeciesID { get; }
+    public abstract ushort MaxMoveID { get; }
+    public abstract ushort MaxSpeciesID { get; }
     public abstract int MaxItemID { get; }
     public abstract int MaxAbilityID { get; }
     public abstract int MaxBallID { get; }
@@ -238,11 +238,10 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     public virtual int MinGameID => 0;
     public abstract int MaxIV { get; }
     public abstract int MaxEV { get; }
-    public abstract int OTLength { get; }
-    public abstract int NickLength { get; }
+    public abstract int MaxStringLengthOT { get; }
+    public abstract int MaxStringLengthNickname { get; }
 
     // Derived
-    public int SpecForm { get => Species + (Form << 11); set { Species = value & 0x7FF; Form = value >> 11; } }
     public virtual int SpriteItem => HeldItem;
     public virtual bool IsShiny => TSV == PSV;
     public int TrainerID7 { get => (int)((uint)(TID | (SID << 16)) % 1000000); set => SetID7(TrainerSID7, value); }
@@ -294,11 +293,13 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     public bool SWSH => Version is (int)SW or (int)SH;
     public virtual bool BDSP => Version is (int)BD or (int)SP;
     public virtual bool LA => Version is (int)PLA;
+    public bool SV => Version is (int)SL or (int)VL;
 
     public bool GO_LGPE => GO && Met_Location == Locations.GO7;
     public bool GO_HOME => GO && Met_Location == Locations.GO8;
     public bool VC => VC1 || VC2;
     public bool GG => LGPE || GO_LGPE;
+    public bool Gen9 => SV;
     public bool Gen8 => Version is >= 44 and <= 49 || GO_HOME;
     public bool Gen7 => Version is >= 30 and <= 33 || GG;
     public bool Gen6 => Version is >= 24 and <= 29;
@@ -313,6 +314,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     {
         get
         {
+            if (Gen9) return 9;
             if (Gen8) return 8;
             if (Gen7) return 7;
             if (Gen6) return 6;
@@ -327,7 +329,6 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
         }
     }
 
-    public int DebutGeneration => Legal.GetDebutGeneration(Species);
     public bool PKRS_Infected { get => PKRS_Strain != 0; set => PKRS_Strain = value ? Math.Max(PKRS_Strain, 1) : 0; }
 
     public bool PKRS_Cured
@@ -431,15 +432,15 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
         }
     }
 
-    public int[] Moves
+    public ushort[] Moves
     {
         get => new[] { Move1, Move2, Move3, Move4 };
-        set => SetMoves(value.AsSpan());
+        set => SetMoves(value);
     }
 
-    public void PushMove(int move)
+    public void PushMove(ushort move)
     {
-        if (move == 0 || (uint)move >= MaxMoveID || HasMove(move))
+        if (move == 0 || move >= MaxMoveID || HasMove(move))
             return;
 
         var ct = MoveCount;
@@ -451,7 +452,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
 
     public int MoveCount => Convert.ToInt32(Move1 != 0) + Convert.ToInt32(Move2 != 0) + Convert.ToInt32(Move3 != 0) + Convert.ToInt32(Move4 != 0);
 
-    public void GetMoves(Span<int> value)
+    public void GetMoves(Span<ushort> value)
     {
         value[3] = Move4;
         value[2] = Move3;
@@ -459,26 +460,42 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
         value[0] = Move1;
     }
 
-    public void SetMoves(ReadOnlySpan<int> value)
+    public void SetMoves(Moveset value)
     {
-        Move1 = value.Length > 0 ? value[0] : 0;
-        Move2 = value.Length > 1 ? value[1] : 0;
-        Move3 = value.Length > 2 ? value[2] : 0;
-        Move4 = value.Length > 3 ? value[3] : 0;
+        Move1 = value.Move1;
+        Move2 = value.Move2;
+        Move3 = value.Move3;
+        Move4 = value.Move4;
     }
 
-    public int[] RelearnMoves
+    public void SetMoves(ReadOnlySpan<ushort> value)
+    {
+        Move1 = value.Length > 0 ? value[0] : default;
+        Move2 = value.Length > 1 ? value[1] : default;
+        Move3 = value.Length > 2 ? value[2] : default;
+        Move4 = value.Length > 3 ? value[3] : default;
+    }
+
+    public ushort[] RelearnMoves
     {
         get => new[] { RelearnMove1, RelearnMove2, RelearnMove3, RelearnMove4 };
         set => SetRelearnMoves(value);
     }
 
-    public void SetRelearnMoves(IReadOnlyList<int> value)
+    public void SetRelearnMoves(Moveset value)
     {
-        RelearnMove1 = value.Count > 0 ? value[0] : 0;
-        RelearnMove2 = value.Count > 1 ? value[1] : 0;
-        RelearnMove3 = value.Count > 2 ? value[2] : 0;
-        RelearnMove4 = value.Count > 3 ? value[3] : 0;
+        RelearnMove1 = value.Move1;
+        RelearnMove2 = value.Move2;
+        RelearnMove3 = value.Move3;
+        RelearnMove4 = value.Move4;
+    }
+
+    public void SetRelearnMoves(IReadOnlyList<ushort> value)
+    {
+        RelearnMove1 = value.Count > 0 ? value[0] : default;
+        RelearnMove2 = value.Count > 1 ? value[1] : default;
+        RelearnMove3 = value.Count > 2 ? value[2] : default;
+        RelearnMove4 = value.Count > 3 ? value[3] : default;
     }
 
     public int PIDAbility
@@ -489,7 +506,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
                 return -1;
 
             if (Version == (int) CXD)
-                return PersonalInfo.GetAbilityIndex(Ability); // Can mismatch; not tied to PID
+                return PersonalInfo.GetIndexOfAbility(Ability); // Can mismatch; not tied to PID
             return (int)((Gen5 ? PID >> 16 : PID) & 1);
         }
     }
@@ -528,54 +545,6 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     public virtual bool IsUntraded => false;
     public virtual bool IsNative => Generation == Format;
     public bool IsOriginValid => Species <= MaxSpeciesID;
-
-    /// <summary>
-    /// Checks if the <see cref="PKM"/> could inhabit a set of games.
-    /// </summary>
-    /// <param name="generation">Set of games.</param>
-    /// <param name="species"></param>
-    /// <returns>True if could inhabit, False if not.</returns>
-    public bool InhabitedGeneration(int generation, int species = -1)
-    {
-        if (species < 0)
-            species = Species;
-
-        var format = Format;
-        if (format == generation)
-            return true;
-
-        if (!IsOriginValid)
-            return false;
-
-        // Sanity Check Species ID
-        if (species > Legal.GetMaxSpeciesOrigin(generation) && !EvolutionLegality.GetFutureGenEvolutions(generation).Contains(species))
-            return false;
-
-        // Trade generation 1 -> 2
-        if (format == 2 && generation == 1 && !Korean)
-            return true;
-
-        // Trade generation 2 -> 1
-        if (format == 1 && generation == 2 && ParseSettings.AllowGen1Tradeback)
-            return true;
-
-        if (format < generation)
-            return false; // Future
-
-        int gen = Generation;
-        return generation switch
-        {
-            1 => format == 1 || VC, // species compat checked via sanity above
-            2 => format == 2 || VC,
-            3 => Gen3,
-            4 => gen is >= 3 and <= 4,
-            5 => gen is >= 3 and <= 5,
-            6 => gen is >= 3 and <= 6,
-            7 => gen is >= 3 and <= 7 || VC,
-            8 => gen is >= 3 and <= 8 || VC,
-            _ => false,
-        };
-    }
 
     /// <summary>
     /// Checks if the PKM has its original met location.
@@ -664,9 +633,9 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     public virtual void RefreshAbility(int n)
     {
         AbilityNumber = 1 << n;
-        var abilities = PersonalInfo.Abilities;
-        if ((uint)n < abilities.Count)
-            Ability = abilities[n];
+        IPersonalAbility pi = PersonalInfo;
+        if ((uint)n < pi.AbilityCount)
+            Ability = pi.GetAbilityAtIndex(n);
     }
 
     /// <summary>
@@ -686,14 +655,14 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     /// </summary>
     /// <param name="p"><see cref="PersonalInfo"/> entry containing Base Stat Info</param>
     /// <returns>Battle Stats (H/A/B/S/C/D)</returns>
-    public ushort[] GetStats(PersonalInfo p)
+    public ushort[] GetStats(IBaseStat p)
     {
         ushort[] stats = new ushort[6];
         LoadStats(p, stats);
         return stats;
     }
 
-    public virtual void LoadStats(PersonalInfo p, Span<ushort> stats)
+    public virtual void LoadStats(IBaseStat p, Span<ushort> stats)
     {
         int level = CurrentLevel; // recalculate instead of checking Stat_Level
         if (this is IHyperTrain t)
@@ -705,7 +674,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
         NatureAmp.ModifyStatsForNature(stats, StatNature);
     }
 
-    private void LoadStats(Span<ushort> stats, PersonalInfo p, IHyperTrain t, int level)
+    private void LoadStats(Span<ushort> stats, IBaseStat p, IHyperTrain t, int level)
     {
         stats[0] = (ushort)(p.HP == 1 ? 1 : (((t.HT_HP ? 31 : IV_HP) + (2 * p.HP) + (EV_HP / 4) + 100) * level / 100) + 10);
         stats[1] = (ushort)((((t.HT_ATK ? 31 : IV_ATK) + (2 * p.ATK) + (EV_ATK / 4)) * level / 100) + 5);
@@ -715,7 +684,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
         stats[3] = (ushort)((((t.HT_SPE ? 31 : IV_SPE) + (2 * p.SPE) + (EV_SPE / 4)) * level / 100) + 5);
     }
 
-    private void LoadStats(Span<ushort> stats, PersonalInfo p, int level)
+    private void LoadStats(Span<ushort> stats, IBaseStat p, int level)
     {
         stats[0] = (ushort)(p.HP == 1 ? 1 : ((IV_HP + (2 * p.HP) + (EV_HP / 4) + 100) * level / 100) + 10);
         stats[1] = (ushort)(((IV_ATK + (2 * p.ATK) + (EV_ATK / 4)) * level / 100) + 5);
@@ -779,7 +748,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
         1 => Move2_PP = GetMovePP(Move2, Move2_PPUps),
         2 => Move3_PP = GetMovePP(Move3, Move3_PPUps),
         3 => Move4_PP = GetMovePP(Move4, Move4_PPUps),
-        _ => throw new ArgumentOutOfRangeException(nameof(index)),
+        _ => throw new ArgumentOutOfRangeException(nameof(index), index, "Index must be between 0 and 3."),
     };
 
     /// <summary>
@@ -828,14 +797,14 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     /// <param name="move">Move ID</param>
     /// <param name="ppUpCount">PP Ups count</param>
     /// <returns>Current PP for the move.</returns>
-    public virtual int GetMovePP(int move, int ppUpCount) => GetBasePP(move) * (5 + ppUpCount) / 5;
+    public virtual int GetMovePP(ushort move, int ppUpCount) => GetBasePP(move) * (5 + ppUpCount) / 5;
 
     /// <summary>
     /// Gets the base PP of a move ID depending on the <see cref="PKM"/>'s format.
     /// </summary>
     /// <param name="move">Move ID</param>
     /// <returns>Amount of PP the move has by default (no PP Ups).</returns>
-    private int GetBasePP(int move) => MoveInfo.GetPP(Context, move);
+    private int GetBasePP(ushort move) => MoveInfo.GetPP(Context, move);
 
     /// <summary>
     /// Applies a shiny <see cref="PID"/> to the <see cref="PKM"/>.
@@ -912,7 +881,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     /// This method should only be used for Unown originating in Generation 3 games.
     /// If a <see cref="PKM"/> originated in a generation prior to Generation 6, the <see cref="EncryptionConstant"/> is updated.
     /// </remarks>
-    public void SetPIDUnown3(int form)
+    public void SetPIDUnown3(byte form)
     {
         var rnd = Util.Rand;
         do PID = rnd.Rand32(); while (EntityPID.GetUnownForm3(PID) != form);
@@ -931,7 +900,10 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     public void SetRandomIVs(Span<int> ivs, int minFlawless = -1)
     {
         if (Version == (int)GameVersion.GO && minFlawless != 6)
+        {
             SetRandomIVsGO(ivs);
+            return;
+        }
 
         var rnd = Util.Rand;
         for (int i = 0; i < 6; i++)
@@ -966,7 +938,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     /// <param name="template">IV template to generate from</param>
     /// <param name="minFlawless">Count of flawless IVs to set. If none provided, a count will be detected.</param>
     /// <returns>Randomized IVs if desired.</returns>
-    public void SetRandomIVsTemplate(ReadOnlySpan<int> template, int minFlawless = -1)
+    public void SetRandomIVsTemplate(IndividualValueSet template, int minFlawless = -1)
     {
         int count = minFlawless == -1 ? GetFlawlessIVCount() : minFlawless;
         Span<int> ivs = stackalloc int[6];
@@ -986,8 +958,12 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     /// <returns>Count of IVs that should be max.</returns>
     public int GetFlawlessIVCount()
     {
-        if (Generation >= 6 && (Legal.Legends.Contains(Species) || Legal.SubLegends.Contains(Species)))
-            return 3;
+        if (Generation >= 6)
+        {
+            var species = Species;
+            if (Legal.Legends.Contains(species) || Legal.SubLegends.Contains(species))
+                return 3;
+        }
         if (XY)
         {
             if (PersonalInfo.EggGroup1 == 15) // Undiscovered
@@ -1033,11 +1009,21 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
         var shared = destProperties.Intersect(srcProperties);
         foreach (string property in shared)
         {
+            // Setter sanity check: a derived type may not implement a setter if its parent type has one.
+            if (!BatchEditing.TryGetHasProperty(result, property, out var pi))
+                continue;
+            if (!pi.CanWrite)
+                continue;
+
+            // Fetch the current value.
             if (!BatchEditing.TryGetHasProperty(this, property, out var src))
                 continue;
             var prop = src.GetValue(this);
-            if (prop is not (byte[] or null) && BatchEditing.TryGetHasProperty(result, property, out var pi))
-                ReflectUtil.SetValue(pi, result, prop);
+            if (prop is byte[] or null)
+                continue; // not a valid property transfer
+
+            // Write it to the destination.
+            ReflectUtil.SetValue(pi, result, prop);
         }
 
         // set shared properties for the Gen1/2 base class
@@ -1048,52 +1034,52 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     /// <summary>
     /// Checks if the <see cref="PKM"/> has the <see cref="move"/> in its current move list.
     /// </summary>
-    public bool HasMove(int move) => Move1 == move || Move2 == move || Move3 == move || Move4 == move;
+    public bool HasMove(ushort move) => Move1 == move || Move2 == move || Move3 == move || Move4 == move;
 
-    public int GetMoveIndex(int move) => Move1 == move ? 0 : Move2 == move ? 1 : Move3 == move ? 2 : Move4 == move ? 3 : -1;
+    public int GetMoveIndex(ushort move) => Move1 == move ? 0 : Move2 == move ? 1 : Move3 == move ? 2 : Move4 == move ? 3 : -1;
 
-    public int GetMove(int index) => index switch
+    public ushort GetMove(int index) => index switch
     {
         0 => Move1,
         1 => Move2,
         2 => Move3,
         3 => Move4,
-        _ => throw new IndexOutOfRangeException(nameof(index)),
+        _ => throw new ArgumentOutOfRangeException(nameof(index), index, "Move index must be between 0 and 3."),
     };
 
-    public int SetMove(int index, int value) => index switch
+    public ushort SetMove(int index, ushort value) => index switch
     {
         0 => Move1 = value,
         1 => Move2 = value,
         2 => Move3 = value,
         3 => Move4 = value,
-        _ => throw new IndexOutOfRangeException(nameof(index)),
+        _ => throw new ArgumentOutOfRangeException(nameof(index), index, "Move index must be between 0 and 3."),
     };
 
-    public int GetRelearnMove(int index) => index switch
+    public ushort GetRelearnMove(int index) => index switch
     {
         0 => RelearnMove1,
         1 => RelearnMove2,
         2 => RelearnMove3,
         3 => RelearnMove4,
-        _ => throw new IndexOutOfRangeException(nameof(index)),
+        _ => throw new ArgumentOutOfRangeException(nameof(index), index, "Move index must be between 0 and 3."),
     };
 
-    public int SetRelearnMove(int index, int value) => index switch
+    public ushort SetRelearnMove(int index, ushort value) => index switch
     {
         0 => RelearnMove1 = value,
         1 => RelearnMove2 = value,
         2 => RelearnMove3 = value,
         3 => RelearnMove4 = value,
-        _ => throw new IndexOutOfRangeException(nameof(index)),
+        _ => throw new ArgumentOutOfRangeException(nameof(index), index, "Move index must be between 0 and 3."),
     };
 
     /// <summary>
     /// Checks if the <see cref="PKM"/> has the <see cref="move"/> in its relearn move list.
     /// </summary>
-    public bool HasRelearnMove(int move) => RelearnMove1 == move || RelearnMove2 == move || RelearnMove3 == move || RelearnMove4 == move;
+    public bool HasRelearnMove(ushort move) => RelearnMove1 == move || RelearnMove2 == move || RelearnMove3 == move || RelearnMove4 == move;
 
-    public void GetRelearnMoves(Span<int> value)
+    public void GetRelearnMoves(Span<ushort> value)
     {
         value[3] = RelearnMove4;
         value[2] = RelearnMove3;
@@ -1107,7 +1093,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
     public void ClearInvalidMoves()
     {
         uint invalid = 0;
-        Span<int> moves = stackalloc int[4];
+        Span<ushort> moves = stackalloc ushort[4];
         GetMoves(moves);
         for (var i = 0; i < moves.Length; i++)
         {
@@ -1141,7 +1127,7 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
         3 => EV_SPE,
         4 => EV_SPA,
         5 => EV_SPD,
-        _ => throw new ArgumentOutOfRangeException(nameof(index)),
+        _ => throw new ArgumentOutOfRangeException(nameof(index), index, "EV index must be between 0 and 5."),
     };
 
     /// <summary>
@@ -1156,6 +1142,6 @@ public abstract class PKM : ISpeciesForm, ITrainerID, IGeneration, IShiny, ILang
         3 => IV_SPE,
         4 => IV_SPA,
         5 => IV_SPD,
-        _ => throw new ArgumentOutOfRangeException(nameof(index)),
+        _ => throw new ArgumentOutOfRangeException(nameof(index), index, "IV index must be between 0 and 5."),
     };
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace PKHeX.Core;
@@ -19,7 +19,7 @@ public sealed class SAV7b : SAV_BEEF, ISaveBlock7b, IGameSync, IEventFlagArray
     public override int SIZE_BOXSLOT => PokeCrypto.SIZE_6PARTY;
     public override byte[] GetDataForBox(PKM pk) => pk.EncryptedPartyData;
 
-    public override PersonalTable Personal => PersonalTable.GG;
+    public override IPersonalTable Personal => PersonalTable.GG;
     public override IReadOnlyList<ushort> HeldItems => Legal.HeldItems_GG;
 
     protected override SaveFile CloneInternal() => new SAV7b((byte[])Data.Clone());
@@ -66,8 +66,8 @@ public sealed class SAV7b : SAV_BEEF, ISaveBlock7b, IGameSync, IEventFlagArray
     // Feature Overrides
     public override int Generation => 7;
     public override EntityContext Context => EntityContext.Gen7b;
-    public override int MaxMoveID => Legal.MaxMoveID_7b;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_7b;
+    public override ushort MaxMoveID => Legal.MaxMoveID_7b;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_7b;
     public override int MaxItemID => Legal.MaxItemID_7b;
     public override int MaxBallID => Legal.MaxBallID_7b;
     public override int MaxGameID => Legal.MaxGameID_7b;
@@ -75,8 +75,8 @@ public sealed class SAV7b : SAV_BEEF, ISaveBlock7b, IGameSync, IEventFlagArray
 
     public override int MaxIV => 31;
     public override int MaxEV => 252;
-    public override int OTLength => 12;
-    public override int NickLength => 12;
+    public override int MaxStringLengthOT => 12;
+    public override int MaxStringLengthNickname => 12;
     protected override int GiftCountMax => 48;
     protected override int GiftFlagMax => 0x100 * 8;
     public int EventFlagCount => 4160; // 0xDC0 (true max may be up to 0x7F less. 23A8 starts u64 hashvals)
@@ -99,8 +99,8 @@ public sealed class SAV7b : SAV_BEEF, ISaveBlock7b, IGameSync, IEventFlagArray
     }
 
     protected override void SetDex(PKM pk) => Blocks.Zukan.SetDex(pk);
-    public override bool GetCaught(int species) => Blocks.Zukan.GetCaught(species);
-    public override bool GetSeen(int species) => Blocks.Zukan.GetSeen(species);
+    public override bool GetCaught(ushort species) => Blocks.Zukan.GetCaught(species);
+    public override bool GetSeen(ushort species) => Blocks.Zukan.GetSeen(species);
 
     protected override PKM GetPKM(byte[] data) => new PB7(data);
     protected override byte[] DecryptPKM(byte[] data) => PokeCrypto.DecryptArray6(data);

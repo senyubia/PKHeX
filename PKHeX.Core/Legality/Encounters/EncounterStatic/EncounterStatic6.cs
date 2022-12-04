@@ -1,12 +1,13 @@
-﻿namespace PKHeX.Core;
+namespace PKHeX.Core;
 
 /// <summary>
 /// Generation 6 Static Encounter
 /// </summary>
 /// <inheritdoc cref="EncounterStatic"/>
-public sealed record EncounterStatic6(GameVersion Version) : EncounterStatic(Version), IContestStats
+public sealed record EncounterStatic6(GameVersion Version) : EncounterStatic(Version), IContestStatsReadOnly
 {
     public override int Generation => 6;
+    public override EntityContext Context => EntityContext.Gen6;
 
     public byte CNT_Cool   { get; init; }
     public byte CNT_Beauty { get; init; }

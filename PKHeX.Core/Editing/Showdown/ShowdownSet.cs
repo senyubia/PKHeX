@@ -15,15 +15,23 @@ public sealed class ShowdownSet : IBattleTemplate
     private const string LineSplit = ": ";
     private const string ItemSplit = " @ ";
     private static readonly char[] ParenJunk = { '(', ')', '[', ']' };
-    private static readonly ushort[] DashedSpecies = {782, 783, 784, 250, 032, 029}; // Kommo-o, Ho-Oh, Nidoran-M, Nidoran-F
     private const int MAX_SPECIES = (int)MAX_COUNT - 1;
-    private static readonly GameStrings DefaultStrings = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
+    internal const string DefaultLanguage = GameLanguage.DefaultLanguage;
+    private static readonly GameStrings DefaultStrings = GameInfo.GetStrings(DefaultLanguage);
+
+    private static readonly ushort[] DashedSpecies =
+    {
+        (int)NidoranF, (int)NidoranM,
+        (int)HoOh,
+        (int)Jangmoo, (int)Hakamoo, (int)Kommoo,
+        (int)TingLu, (int)ChienPao, (int)WoChien, (int)ChiYu,
+    };
 
     /// <inheritdoc/>
-    public int Species { get; private set; } = -1;
+    public ushort Species { get; private set; }
 
     /// <inheritdoc/>
-    public int Format { get; private set; } = RecentTrainerCache.Format;
+    public EntityContext Context { get; private set; } = RecentTrainerCache.Context;
 
     /// <inheritdoc/>
     public string Nickname { get; private set; } = string.Empty;
@@ -47,13 +55,13 @@ public sealed class ShowdownSet : IBattleTemplate
     public int Friendship { get; private set; } = 255;
 
     /// <inheritdoc/>
-    public int Nature { get; set; } = -1;
+    public int Nature { get; private set; } = -1;
 
     /// <inheritdoc/>
     public string FormName { get; private set; } = string.Empty;
 
     /// <inheritdoc/>
-    public int Form { get; private set; }
+    public byte Form { get; private set; }
 
     /// <inheritdoc/>
     public int[] EVs { get; } = {00, 00, 00, 00, 00, 00};
@@ -62,13 +70,18 @@ public sealed class ShowdownSet : IBattleTemplate
     public int[] IVs { get; } = {31, 31, 31, 31, 31, 31};
 
     /// <inheritdoc/>
-    public int HiddenPowerType { get; set; } = -1;
+    public int HiddenPowerType { get; private set; } = -1;
+
+    public MoveType TeraType { get; private set; } = MoveType.Any;
 
     /// <inheritdoc/>
-    public int[] Moves { get; } = {0, 0, 0, 0};
+    public ushort[] Moves { get; } = {0, 0, 0, 0};
 
     /// <inheritdoc/>
-    public bool CanGigantamax { get; set; }
+    public bool CanGigantamax { get; private set; }
+
+    /// <inheritdoc/>
+    public byte DynamaxLevel { get; private set; } = 10;
 
     /// <summary>
     /// Any lines that failed to be parsed.
@@ -94,10 +107,10 @@ public sealed class ShowdownSet : IBattleTemplate
         ParseLines(lines);
 
         FormName = ShowdownParsing.SetShowdownFormName(Species, FormName, Ability);
-        Form = ShowdownParsing.GetFormFromString(FormName, Strings, Species, Format);
+        Form = ShowdownParsing.GetFormFromString(FormName, Strings, Species, Context);
 
         // Handle edge case with fixed-gender forms.
-        if (Species is (int) Meowstic or (int) Indeedee)
+        if (Species is (int)Meowstic or (int)Indeedee or (int)Basculegion or (int)Oinkologne)
             ReviseGenderedForms();
     }
 
@@ -155,10 +168,10 @@ public sealed class ShowdownSet : IBattleTemplate
                 int move = StringUtil.FindIndexIgnoreCase(Strings.movelist, moveString);
                 if (move < 0)
                     InvalidLines.Add($"Unknown Move: {moveString}");
-                else if (Array.IndexOf(Moves, move) != -1)
+                else if (Array.IndexOf(Moves, (ushort)move) != -1)
                     InvalidLines.Add($"Duplicate Move: {moveString}");
                 else
-                    Moves[movectr++] = move;
+                    Moves[movectr++] = (ushort)move;
 
                 if (movectr == MaxMoveCount)
                     return; // End of moves, end of set data
@@ -196,33 +209,59 @@ public sealed class ShowdownSet : IBattleTemplate
         return (Nature = StringUtil.FindIndexIgnoreCase(Strings.natures, naturestr)) >= 0;
     }
 
-    private bool ParseEntry(string identifier, string value)
+    private bool ParseEntry(string identifier, string value) => identifier switch
     {
-        switch (identifier)
-        {
-            case "Ability" or "Trait": return (Ability = StringUtil.FindIndexIgnoreCase(Strings.abilitylist, value)) >= 0;
-            case "Shiny": return Shiny = StringUtil.IsMatchIgnoreCase("Yes", value);
-            case "Gigantamax": return CanGigantamax = StringUtil.IsMatchIgnoreCase("Yes", value);
-            case "Nature": return (Nature = StringUtil.FindIndexIgnoreCase(Strings.natures, value)) >= 0;
-            case "EV" or "EVs": ParseLineEVs(value); return true;
-            case "IV" or "IVs": ParseLineIVs(value); return true;
-            case "Level":
-            {
-                if (!int.TryParse(value.Trim(), out int val))
-                    return false;
-                Level = val;
-                return true;
-            }
-            case "Friendship" or "Happiness":
-            {
-                if (!int.TryParse(value.Trim(), out int val))
-                    return false;
-                Friendship = val;
-                return true;
-            }
-            default:
-                return false;
-        }
+        "Ability"       => (Ability = StringUtil.FindIndexIgnoreCase(Strings.abilitylist, value)) >= 0,
+        "Nature"        => (Nature  = StringUtil.FindIndexIgnoreCase(Strings.natures    , value)) >= 0,
+        "Shiny"         => Shiny         = StringUtil.IsMatchIgnoreCase("Yes", value),
+        "Gigantamax"    => CanGigantamax = StringUtil.IsMatchIgnoreCase("Yes", value),
+        "Friendship"    => ParseFriendship(value),
+        "EVs"           => ParseLineEVs(value),
+        "IVs"           => ParseLineIVs(value),
+        "Level"         => ParseLevel(value),
+        "Dynamax Level" => ParseDynamax(value),
+        "Tera Type"     => ParseTeraType(value),
+        _ => false,
+    };
+
+    private bool ParseLevel(string value)
+    {
+        if (!int.TryParse(value.Trim(), out var val))
+            return false;
+        if ((uint)val is 0 or > 100)
+            return false;
+        Level = val;
+        return true;
+    }
+
+    private bool ParseFriendship(string value)
+    {
+        if (!int.TryParse(value.Trim(), out var val))
+            return false;
+        if ((uint)val > byte.MaxValue)
+            return false;
+        Friendship = val;
+        return true;
+    }
+
+    private bool ParseDynamax(string value)
+    {
+        Context = EntityContext.Gen8;
+        var val = Util.ToInt32(value);
+        if ((uint)val > 10)
+            return false;
+        return (DynamaxLevel = (byte)val) is (>= 0 and <= 10);
+    }
+
+    private bool ParseTeraType(string value)
+    {
+        Context = EntityContext.Gen9;
+        var types = Strings.types;
+        var val = StringUtil.FindIndexIgnoreCase(types, value);
+        if (val < 0)
+            return false;
+        TeraType = (MoveType)val;
+        return true;
     }
 
     /// <summary>
@@ -234,7 +273,7 @@ public sealed class ShowdownSet : IBattleTemplate
     /// Gets the localized Text representation of the set details.
     /// </summary>
     /// <param name="lang">2 character language code</param>
-    public string LocalizedText(string lang) => LocalizedText(GameLanguage.GetLanguageIndex(lang));
+    public string LocalizedText(string lang = DefaultLanguage) => LocalizedText(GameLanguage.GetLanguageIndex(lang));
 
     /// <summary>
     /// Gets the localized Text representation of the set details.
@@ -248,7 +287,7 @@ public sealed class ShowdownSet : IBattleTemplate
 
     private string GetText(GameStrings? strings = null)
     {
-        if (Species is <= 0 or > MAX_SPECIES)
+        if (Species is 0 or > MAX_SPECIES)
             return string.Empty;
 
         if (strings != null)
@@ -267,7 +306,7 @@ public sealed class ShowdownSet : IBattleTemplate
         result.Add(GetStringFirstLine(form));
 
         // IVs
-        var ivs = GetStringStats(IVs, Format < 3 ? 15 : 31);
+        var ivs = GetStringStats(IVs, Context.Generation() < 3 ? 15 : 31);
         if (ivs.Length != 0)
             result.Add($"IVs: {string.Join(" / ", ivs)}");
 
@@ -279,12 +318,16 @@ public sealed class ShowdownSet : IBattleTemplate
         // Secondary Stats
         if ((uint)Ability < Strings.Ability.Count)
             result.Add($"Ability: {Strings.Ability[Ability]}");
+        if (TeraType != MoveType.Any)
+            result.Add($"Tera Type: {Strings.Types[(int)TeraType]}");
         if (Level != 100)
             result.Add($"Level: {Level}");
-        if (CanGigantamax)
-            result.Add("Gigantamax: Yes");
         if (Shiny)
             result.Add("Shiny: Yes");
+        if (DynamaxLevel != 10 && Context == EntityContext.Gen8)
+            result.Add($"Dynamax Level: {DynamaxLevel}");
+        if (CanGigantamax)
+            result.Add("Gigantamax: Yes");
 
         if ((uint)Nature < Strings.Natures.Count)
             result.Add($"{Strings.Natures[Nature]} Nature");
@@ -314,7 +357,7 @@ public sealed class ShowdownSet : IBattleTemplate
 
         if (HeldItem > 0)
         {
-            var items = Strings.GetItemStrings(Format);
+            var items = Strings.GetItemStrings(Context);
             if ((uint)HeldItem < items.Length)
                 result += $" @ {items[HeldItem]}";
         }
@@ -325,7 +368,7 @@ public sealed class ShowdownSet : IBattleTemplate
     {
         if (Nickname.Length == 0)
             return specForm;
-        bool isNicknamed = SpeciesName.IsNicknamedAnyLanguage(Species, Nickname, Format);
+        bool isNicknamed = SpeciesName.IsNicknamedAnyLanguage(Species, Nickname, Context.Generation());
         if (!isNicknamed)
             return specForm;
         return $"{Nickname} ({specForm})";
@@ -354,9 +397,9 @@ public sealed class ShowdownSet : IBattleTemplate
     private IEnumerable<string> GetStringMoves()
     {
         var moves = Strings.Move;
-        foreach (int move in Moves)
+        foreach (var move in Moves)
         {
-            if (move == 0 || (uint)move >= moves.Count)
+            if (move == 0 || move >= moves.Count)
                 continue;
 
             if (move != (int)Move.HiddenPower)
@@ -380,16 +423,26 @@ public sealed class ShowdownSet : IBattleTemplate
     };
 
     /// <summary>
+    /// Forces some properties to indicate the set for future display values.
+    /// </summary>
+    /// <param name="pk">PKM to convert to string</param>
+    public void InterpretAsPreview(PKM pk)
+    {
+        if (pk.Format <= 2) // Nature preview from IVs
+            Nature = Experience.GetNatureVC(pk.EXP);
+    }
+
+    /// <summary>
     /// Converts the <see cref="PKM"/> data into an importable set format for Pokémon Showdown.
     /// </summary>
     /// <param name="pk">PKM to convert to string</param>
     /// <returns>New ShowdownSet object representing the input <see cref="pk"/></returns>
     public ShowdownSet(PKM pk)
     {
-        if (pk.Species <= 0)
+        if (pk.Species == 0)
             return;
 
-        Format = pk.Format;
+        Context = pk.Context;
 
         Nickname = pk.Nickname;
         Species = pk.Species;
@@ -406,9 +459,13 @@ public sealed class ShowdownSet : IBattleTemplate
 
         if (pk is IGigantamax g)
             CanGigantamax = g.CanGigantamax;
+        if (pk is IDynamaxLevel d)
+            DynamaxLevel = d.DynamaxLevel;
 
-        if (Array.IndexOf(Moves, (int)Move.HiddenPower) != -1)
-            HiddenPowerType = HiddenPower.GetType(IVs, Format);
+        if (Array.IndexOf(Moves, (ushort)Move.HiddenPower) != -1)
+            HiddenPowerType = HiddenPower.GetType(IVs, Context);
+        if (pk is ITeraType t)
+            TeraType = t.TeraType;
         if (pk is IHyperTrain h)
         {
             for (int i = 0; i < 6; i++)
@@ -418,7 +475,7 @@ public sealed class ShowdownSet : IBattleTemplate
             }
         }
 
-        FormName = ShowdownParsing.GetStringFromForm(Form = pk.Form, Strings, Species, Format);
+        FormName = ShowdownParsing.GetStringFromForm(Form = pk.Form, Strings, Species, Context);
     }
 
     private void ParseFirstLine(string first)
@@ -440,22 +497,22 @@ public sealed class ShowdownSet : IBattleTemplate
 
     private void ParseItemName(string itemName)
     {
-        if (TrySetItem(Format))
+        if (TrySetItem(Context))
             return;
-        if (TrySetItem(3))
+        if (TrySetItem(EntityContext.Gen3))
             return;
-        if (TrySetItem(2))
+        if (TrySetItem(EntityContext.Gen2))
             return;
         InvalidLines.Add($"Unknown Item: {itemName}");
 
-        bool TrySetItem(int format)
+        bool TrySetItem(EntityContext context)
         {
-            var items = Strings.GetItemStrings(format);
+            var items = Strings.GetItemStrings(context);
             int item = StringUtil.FindIndexIgnoreCase(items, itemName);
             if (item < 0)
                 return false;
             HeldItem = item;
-            Format = format;
+            Context = context;
             return true;
         }
     }
@@ -495,19 +552,26 @@ public sealed class ShowdownSet : IBattleTemplate
             speciesLine = speciesLine[..^Gmax.Length];
         }
 
-        if ((Species = StringUtil.FindIndexIgnoreCase(Strings.specieslist, speciesLine)) >= 0) // success, nothing else!
+        var speciesIndex = StringUtil.FindIndexIgnoreCase(Strings.specieslist, speciesLine);
+        if (speciesIndex > 0)
+        {
+            // success, nothing else !
+            Species = (ushort)speciesIndex;
             return true;
+        }
 
         // Form string present.
         int end = speciesLine.LastIndexOf('-');
         if (end < 0)
             return false;
 
-        Species = StringUtil.FindIndexIgnoreCase(Strings.specieslist, speciesLine[..end]);
-        FormName = speciesLine[(end + 1)..];
-
-        if (Species >= 0)
+        speciesIndex = StringUtil.FindIndexIgnoreCase(Strings.specieslist, speciesLine[..end]);
+        if (speciesIndex > 0)
+        {
+            Species = (ushort)speciesIndex;
+            FormName = speciesLine[(end + 1)..];
             return true;
+        }
 
         // failure to parse, check edge cases
         foreach (var e in DashedSpecies)
@@ -524,10 +588,15 @@ public sealed class ShowdownSet : IBattleTemplate
         end = speciesLine.LastIndexOf('-', Math.Max(0, end - 1));
         if (end < 0)
             return false;
-        Species = StringUtil.FindIndexIgnoreCase(Strings.specieslist, speciesLine[..end]);
-        FormName = speciesLine[(end + 1)..];
 
-        return Species >= 0;
+        speciesIndex = StringUtil.FindIndexIgnoreCase(Strings.specieslist, speciesLine[..end]);
+        if (speciesIndex > 0)
+        {
+            Species = (ushort)speciesIndex;
+            FormName = speciesLine[(end + 1)..];
+            return true;
+        }
+        return false;
     }
 
     private void ParseSpeciesNickname(string line)
@@ -586,12 +655,12 @@ public sealed class ShowdownSet : IBattleTemplate
         HiddenPowerType = hpVal;
         if (!Array.TrueForAll(IVs, z => z == 31))
         {
-            if (!HiddenPower.SetIVsForType(hpVal, IVs, Format))
+            if (!HiddenPower.SetIVsForType(hpVal, IVs, Context))
                 InvalidLines.Add($"Invalid IVs for Hidden Power Type: {type}");
         }
         else if (hpVal >= 0)
         {
-            HiddenPower.SetIVs(hpVal, IVs, Format); // Alter IVs
+            HiddenPower.SetIVs(hpVal, IVs, Context); // Alter IVs
         }
         else
         {
@@ -600,9 +669,9 @@ public sealed class ShowdownSet : IBattleTemplate
         return hiddenPowerName;
     }
 
-    private void ParseLineEVs(string line)
+    private bool ParseLineEVs(string line)
     {
-        var list = SplitLineStats(line);
+        var list = line.Split(StatSplitters, StringSplitOptions.None);
         if ((list.Length & 1) == 1)
             InvalidLines.Add("Unknown EV input.");
         for (int i = 0; i < list.Length / 2; i++)
@@ -617,11 +686,12 @@ public sealed class ShowdownSet : IBattleTemplate
             }
             EVs[index] = value;
         }
+        return true;
     }
 
-    private void ParseLineIVs(string line)
+    private bool ParseLineIVs(string line)
     {
-        var list = SplitLineStats(line);
+        var list = line.Split(StatSplitters, StringSplitOptions.None);
         if ((list.Length & 1) == 1)
             InvalidLines.Add("Unknown IV input.");
         for (int i = 0; i < list.Length / 2; i++)
@@ -636,6 +706,7 @@ public sealed class ShowdownSet : IBattleTemplate
             }
             IVs[index] = value;
         }
+        return true;
     }
 
     private static string RemoveAll(string original, ReadOnlySpan<char> remove)
@@ -650,14 +721,5 @@ public sealed class ShowdownSet : IBattleTemplate
         if (ctr == original.Length)
             return original;
         return new string(result[..ctr].ToArray());
-    }
-
-    private static string[] SplitLineStats(string line)
-    {
-        // Because people think they can type sets out...
-        return line
-            .Replace("SAtk", "SpA").Replace("Sp Atk", "SpA")
-            .Replace("SDef", "SpD").Replace("Sp Def", "SpD")
-            .Replace("Spd", "Spe").Replace("Speed", "Spe").Split(StatSplitters, StringSplitOptions.None);
     }
 }

@@ -11,32 +11,40 @@ public static class EvolutionSet7
 {
     private const int SIZE = 8;
 
-    private static EvolutionMethod[] GetMethods(ReadOnlySpan<byte> data)
+    private static EvolutionMethod[] GetMethods(ReadOnlySpan<byte> data, bool LevelUpBypass)
     {
-        var evos = new EvolutionMethod[data.Length / SIZE];
-        for (int i = 0; i < data.Length; i += SIZE)
+        if (data.Length == 0)
+            return Array.Empty<EvolutionMethod>();
+
+        var result = new EvolutionMethod[data.Length / SIZE];
+        int i = 0, offset = 0;
+        while (true)
         {
-            var entry = data.Slice(i, SIZE);
-            evos[i / SIZE] = ReadEvolution(entry);
+            var entry = data.Slice(offset, SIZE);
+            result[i] = ReadEvolution(entry, LevelUpBypass);
+            offset += SIZE;
+            if (offset >= data.Length)
+                return result;
+            i++;
         }
-        return evos;
     }
 
-    private static EvolutionMethod ReadEvolution(ReadOnlySpan<byte> entry)
+    private static EvolutionMethod ReadEvolution(ReadOnlySpan<byte> entry, bool levelUpBypass)
     {
-        var method = ReadUInt16LittleEndian(entry);
+        var type = (EvolutionType)entry[0];
         var arg = ReadUInt16LittleEndian(entry[2..]);
         var species = ReadUInt16LittleEndian(entry[4..]);
-        var form = (sbyte)entry[6];
+        var form = entry[6];
         var level = entry[7];
-        return new EvolutionMethod(method, species, argument: arg, level: level, form: form);
+        var lvlup = !levelUpBypass && type.IsLevelUpRequired() ? (byte)1 : (byte)0;
+        return new EvolutionMethod(type, species, form, arg, level, lvlup);
     }
 
-    public static IReadOnlyList<EvolutionMethod[]> GetArray(BinLinkerAccessor data)
+    public static IReadOnlyList<EvolutionMethod[]> GetArray(BinLinkerAccessor data, bool LevelUpBypass)
     {
         var evos = new EvolutionMethod[data.Length][];
         for (int i = 0; i < evos.Length; i++)
-            evos[i] = GetMethods(data[i]);
+            evos[i] = GetMethods(data[i], LevelUpBypass);
         return evos;
     }
 }

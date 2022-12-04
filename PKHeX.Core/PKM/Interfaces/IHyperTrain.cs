@@ -2,6 +2,9 @@ using System;
 
 namespace PKHeX.Core;
 
+/// <summary>
+/// Exposes flags to indicate if a stat index has been hyper trained.
+/// </summary>
 public interface IHyperTrain
 {
     byte HyperTrainFlags { get; set; }
@@ -84,7 +87,15 @@ public static partial class Extensions
     }
 
     /// <inheritdoc cref="SetSuggestedHyperTrainingData(PKM,EvolutionHistory,ReadOnlySpan{int})"/>
-    public static void SetSuggestedHyperTrainingData(this PKM pk, int[]? IVs = null) => pk.SetSuggestedHyperTrainingData(EvolutionHistory.Empty, IVs ?? pk.IVs);
+    public static void SetSuggestedHyperTrainingData(this PKM pk, ReadOnlySpan<int> IVs) => pk.SetSuggestedHyperTrainingData(EvolutionHistory.Empty, IVs);
+
+    /// <inheritdoc cref="SetSuggestedHyperTrainingData(PKM,EvolutionHistory,ReadOnlySpan{int})"/>
+    public static void SetSuggestedHyperTrainingData(this PKM pk)
+    {
+        Span<int> ivs = stackalloc int[6];
+        pk.GetIVs(ivs);
+        pk.SetSuggestedHyperTrainingData(ivs);
+    }
 
     /// <summary>
     /// Indicates if Hyper Training is available for toggling.
@@ -95,9 +106,22 @@ public static partial class Extensions
     public static bool IsHyperTrainingAvailable(this IHyperTrain t, EvolutionHistory h) => t switch
     {
         // Check for game formats where training is unavailable:
-        PA8 pa8 => h.Gen7.Length > 0 || pa8.HasVisitedSWSH(h.Gen8) || pa8.HasVisitedBDSP(h.Gen8b),
+        PA8 => h.HasVisitedGen7 || h.HasVisitedSWSH || h.HasVisitedBDSP,
         _ => true,
     };
+
+    /// <summary>
+    /// Indicates if Hyper Training is available for toggling.
+    /// </summary>
+    /// <param name="_">Entity to train</param>
+    /// <param name="h">History of evolutions present as</param>
+    /// <returns>True if available, otherwise false.</returns>
+    public static int GetHyperTrainMinLevel(this IHyperTrain _, EvolutionHistory h)
+    {
+        if (h.HasVisitedGen9)
+            return 50;
+        return 100;
+    }
 
     /// <inheritdoc cref="IsHyperTrainingAvailable(IHyperTrain, EvolutionHistory)"/>
     /// <param name="pk">Entity data</param>
@@ -109,7 +133,8 @@ public static partial class Extensions
         if (!t.IsHyperTrainingAvailable(h))
             return false;
 
-        // Gated behind level 100.
-        return pk.CurrentLevel == 100;
+        // Gated behind level.
+        var min = t.GetHyperTrainMinLevel(h);
+        return pk.CurrentLevel >= min;
     }
 }

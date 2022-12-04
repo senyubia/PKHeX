@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using static System.Buffers.Binary.BinaryPrimitives;
@@ -12,7 +12,7 @@ public sealed class SAV3Colosseum : SaveFile, IGCSaveFile
 {
     protected internal override string ShortSummary => $"{OT} ({Version}) - {PlayTimeString}";
     public override string Extension => this.GCExtension();
-    public override PersonalTable Personal => PersonalTable.RS;
+    public override IPersonalTable Personal => PersonalTable.RS;
     public override IReadOnlyList<ushort> HeldItems => Legal.HeldItems_COLO;
     public SAV3GCMemoryCard? MemoryCard { get; init; }
 
@@ -138,8 +138,8 @@ public sealed class SAV3Colosseum : SaveFile, IGCSaveFile
     public override PKM BlankPKM => new CK3();
     public override Type PKMType => typeof(CK3);
 
-    public override int MaxMoveID => Legal.MaxMoveID_3;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_3;
+    public override ushort MaxMoveID => Legal.MaxMoveID_3;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_3;
     public override int MaxAbilityID => Legal.MaxAbilityID_3;
     public override int MaxBallID => Legal.MaxBallID_3;
     public override int MaxItemID => Legal.MaxItemID_3_COLO;
@@ -149,8 +149,8 @@ public sealed class SAV3Colosseum : SaveFile, IGCSaveFile
     public override int Generation => 3;
     public override EntityContext Context => EntityContext.Gen3;
     protected override int GiftCountMax => 1;
-    public override int OTLength => 10; // as evident by Mattle Ho-Oh
-    public override int NickLength => 10;
+    public override int MaxStringLengthOT => 10; // as evident by Mattle Ho-Oh
+    public override int MaxStringLengthNickname => 10;
     public override int MaxMoney => 9999999;
 
     public override int BoxCount => 3;
@@ -295,10 +295,8 @@ public sealed class SAV3Colosseum : SaveFile, IGCSaveFile
         if (pk is not CK3 ck3)
             return;
 
-        if (ck3.CurrentRegion == 0)
-            ck3.CurrentRegion = 2; // NTSC-U
-        if (ck3.OriginalRegion == 0)
-            ck3.OriginalRegion = 2; // NTSC-U
+        ck3.CurrentRegion = (byte)CurrentRegion;
+        ck3.OriginalRegion = (byte)OriginalRegion;
     }
 
     protected override void SetDex(PKM pk)
@@ -325,16 +323,25 @@ public sealed class SAV3Colosseum : SaveFile, IGCSaveFile
         StrategyMemo.SetEntry(entry);
     }
 
+    // Config
+    private const int Config = 0x08;
+
+    public GCVersion GCGameIndex { get => (GCVersion)Data[Config + 0x00]; set => Data[Config + 0x00] = (byte)value; }
+    public GCRegion CurrentRegion { get => (GCRegion)Data[Config + 0x01]; set => Data[Config + 0x01] = (byte)value; }
+    public GCRegion OriginalRegion { get => (GCRegion)Data[Config + 0x02]; set => Data[Config + 0x02] = (byte)value; }
+    public LanguageGC GCLanguage { get => (LanguageGC)Data[Config + 0x03]; set => Data[Config + 0x03] = (byte)value; }
+    public override int Language { get => (int)GCLanguage.ToLanguageID(); set => GCLanguage = ((LanguageID)value).ToLanguageGC(); }
+
     private TimeSpan PlayedSpan
     {
-        get => TimeSpan.FromSeconds((double)(ReadUInt32BigEndian(Data.AsSpan(40)) - 0x47000000) / 128);
-        set => WriteUInt32BigEndian(Data.AsSpan(40), (uint)(value.TotalSeconds * 128) + 0x47000000);
+        get => TimeSpan.FromSeconds(ReadSingleBigEndian(Data.AsSpan(Config + 0x20)));
+        set => WriteSingleBigEndian(Data.AsSpan(Config + 0x20), (float)value.TotalSeconds);
     }
 
     public override int PlayedHours
     {
-        get => (ushort)PlayedSpan.Hours;
-        set { var time = PlayedSpan; PlayedSpan = time - TimeSpan.FromHours(time.Hours) + TimeSpan.FromHours(value); }
+        get => (ushort)PlayedSpan.TotalHours;
+        set { var time = PlayedSpan; PlayedSpan = time - TimeSpan.FromHours((int)time.TotalHours) + TimeSpan.FromHours(value); }
     }
 
     public override int PlayedMinutes

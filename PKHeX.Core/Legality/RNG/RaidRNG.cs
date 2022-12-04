@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 
 namespace PKHeX.Core;
@@ -33,23 +33,14 @@ public static class RaidRNG
         ApplyDetailsTo(pk8, seed, IVs, raid.FlawlessIVCount, abil, ratio);
     }
 
-    private static void LoadIVs<T>(T raid, Span<int> IVs) where T : EncounterStatic8Nest<T>
+    private static void LoadIVs<T>(T raid, Span<int> span) where T : EncounterStatic8Nest<T>
     {
-        if (raid.IVs.Count == 0)
-        {
-            IVs.Fill(-1);
-        }
+        // Template stores with speed in middle (standard), convert for generator purpose.
+        var ivs = raid.IVs;
+        if (ivs.IsSpecified)
+            ivs.CopyToSpeedLast(span);
         else
-        {
-            // Template stores with speed in middle (standard), convert for generator purpose.
-            var value = raid.IVs;
-            IVs[5] = value[3]; // spe
-            IVs[4] = value[5]; // spd
-            IVs[3] = value[4]; // spa
-            IVs[2] = value[2]; // def
-            IVs[1] = value[1]; // atk
-            IVs[0] = value[0]; // hp
-        }
+            span.Fill(-1);
     }
 
     private static int RemapAbilityToParam(AbilityPermission a) => a switch
@@ -152,34 +143,12 @@ public static class RaidRNG
                 break;
         }
 
-        if (nature_param == -1)
-        {
-            if (pk.Species == (int) Species.Toxtricity && pk.Form == 0)
-            {
-                var table = Nature0;
-                var choice = table[rng.NextInt((uint)table.Length)];
-                if (pk.Nature != choice)
-                    return false;
-            }
-            else if (pk.Species == (int) Species.Toxtricity && pk.Form == 1)
-            {
-                var table = Nature1;
-                var choice = table[rng.NextInt((uint)table.Length)];
-                if (pk.Nature != choice)
-                    return false;
-            }
-            else
-            {
-                var nature = (int)rng.NextInt(25);
-                if (pk.Nature != nature)
-                    return false;
-            }
-        }
-        else
-        {
-            if (pk.Nature != nature_param)
-                return false;
-        }
+        int nature = nature_param != -1 ? nature_param
+            : pk.Species == (int)Species.Toxtricity
+                ? ToxtricityUtil.GetRandomNature(ref rng, pk.Form)
+                : (byte)rng.NextInt(25);
+        if (pk.Nature != nature)
+            return false;
 
         if (pk is IScaledSize s)
         {
@@ -281,28 +250,10 @@ public static class RaidRNG
             _ => (int) rng.NextInt(252) + 1 < gender_ratio ? 1 : 0,
         };
 
-        int nature;
-        if (nature_param == -1)
-        {
-            if (pk.Species == (int)Species.Toxtricity && pk.Form == 0)
-            {
-                var table = Nature0;
-                nature = table[rng.NextInt((uint)table.Length)];
-            }
-            else if (pk.Species == (int)Species.Toxtricity && pk.Form == 1)
-            {
-                var table = Nature1;
-                nature = table[rng.NextInt((uint)table.Length)];
-            }
-            else
-            {
-                nature = (int)rng.NextInt(25);
-            }
-        }
-        else
-        {
-            nature = nature_param;
-        }
+        int nature = nature_param != -1 ? nature_param
+            : pk.Species == (int)Species.Toxtricity
+                ? ToxtricityUtil.GetRandomNature(ref rng, pk.Form)
+                : (byte)rng.NextInt(25);
 
         pk.StatNature = pk.Nature = nature;
 
@@ -332,7 +283,4 @@ public static class RaidRNG
         var xor = pid ^ oid;
         return (xor ^ (xor >> 16)) & 0xFFFF;
     }
-
-    private static readonly byte[] Nature0 = {3, 4, 2, 8, 9, 19, 22, 11, 13, 14, 0, 6, 24};
-    private static readonly byte[] Nature1 = {1, 5, 7, 10, 12, 15, 16, 17, 18, 20, 21, 23};
 }

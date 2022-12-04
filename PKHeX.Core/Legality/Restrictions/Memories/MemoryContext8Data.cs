@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace PKHeX.Core;
 
 public partial class MemoryContext8
 {
-    private static readonly int[] Memory_NotSWSH =
+    private static readonly byte[] Memory_NotSWSH =
     {
         10, // {0} got treats from {1}. {4} that {3}.
         17, // {0} battled at {1}’s side and beat {2}. {4} that {3}.
@@ -42,7 +42,7 @@ public partial class MemoryContext8
         89, // When {0} was in a Box, it had a weird dream in which {1} was using the move {2}. {4} that {3}.
     };
 
-    private static readonly Dictionary<int, ushort[]> KeyItemMemoryArgsGen8 = new()
+    private static readonly Dictionary<ushort, ushort[]> KeyItemMemoryArgsGen8 = new()
     {
         {(int) Species.Rotom, new ushort[] {1278}}, // Rotom Catalog
         {(int) Species.Kyurem, new ushort[] {628, 629}}, // DNA Splicers
@@ -50,7 +50,7 @@ public partial class MemoryContext8
         {(int) Species.Calyrex, new ushort[] {1590, 1591}}, // Reigns of Unity
     };
 
-    private static readonly HashSet<ushort> PurchaseableItemSWSH = new(Legal.TR_SWSH)
+    private static readonly HashSet<ushort> PurchaseableItemSWSH = new(Legal.Pouch_TR_SWSH)
     {
         0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0013,
         0014, 0015, 0017, 0018, 0019, 0020, 0021, 0022, 0023, 0024,

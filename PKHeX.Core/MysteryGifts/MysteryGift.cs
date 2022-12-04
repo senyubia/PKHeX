@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace PKHeX.Core;
@@ -38,6 +37,7 @@ public abstract class MysteryGift : IEncounterable, IMoveset, IRelearn
         WC8.Size when ext is ".wc8" or ".wc8full" => new WC8(data),
         WB8.Size when ext is ".wb8" => new WB8(data),
         WA8.Size when ext is ".wa8" => new WA8(data),
+        WC9.Size when ext is ".wc9" => new WC9(data),
 
         WB7.SizeFull when ext == ".wb7full" => new WB7(data),
         WC6Full.Size when ext == ".wc6full" => new WC6Full(data).Gift,
@@ -58,7 +58,9 @@ public abstract class MysteryGift : IEncounterable, IMoveset, IRelearn
         WR7.Size => new WR7(data),
         WC8.Size => new WC8(data),
         WB8.Size => new WB8(data),
-        WA8.Size => new WA8(data),
+
+        // WA8/WC9: WA8 CardType >0 for wa8, 0 for wc9.
+        WA8.Size => data[0xF] > 0 ? new WA8(data) : new WC9(data),
 
         // WC6/WC7: Check year
         WC6.Size => ReadUInt32LittleEndian(data.AsSpan(0x4C)) / 10000 < 2000 ? new WC7(data) : new WC6(data),
@@ -70,6 +72,7 @@ public abstract class MysteryGift : IEncounterable, IMoveset, IRelearn
     public string Extension => GetType().Name.ToLowerInvariant();
     public string FileName => $"{CardHeader}.{Extension}";
     public abstract int Generation { get; }
+    public abstract EntityContext Context { get; }
 
     public PKM ConvertToPKM(ITrainerInfo tr) => ConvertToPKM(tr, EncounterCriteria.Unrestricted);
     public abstract PKM ConvertToPKM(ITrainerInfo tr, EncounterCriteria criteria);
@@ -114,7 +117,7 @@ public abstract class MysteryGift : IEncounterable, IMoveset, IRelearn
     }
 
     // Properties
-    public virtual int Species { get => -1; set { } }
+    public virtual ushort Species { get => 0; set { } }
     public abstract AbilityPermission Ability { get; }
     public abstract bool GiftUsed { get; set; }
     public abstract string CardTitle { get; set; }
@@ -130,8 +133,8 @@ public abstract class MysteryGift : IEncounterable, IMoveset, IRelearn
     public virtual string CardHeader => (CardID > 0 ? $"Card #: {CardID:0000}" : "N/A") + $" - {CardTitle.Replace('\u3000',' ').Trim()}";
 
     // Search Properties
-    public virtual IReadOnlyList<int> Moves { get => Array.Empty<int>(); set { } }
-    public virtual IReadOnlyList<int> Relearn { get => Array.Empty<int>(); set { } }
+    public virtual Moveset Moves { get => default; set { } }
+    public virtual Moveset Relearn { get => default; set { } }
     public virtual int[] IVs { get => Array.Empty<int>(); set { } }
     public virtual bool HasFixedIVs => true;
     public virtual void GetIVs(Span<int> value) { }
@@ -147,7 +150,7 @@ public abstract class MysteryGift : IEncounterable, IMoveset, IRelearn
     public virtual int HeldItem { get => -1; set { } }
     public virtual int AbilityType { get => -1; set { } }
     public abstract int Gender { get; set; }
-    public abstract int Form { get; set; }
+    public abstract byte Form { get; set; }
     public abstract int TID { get; set; }
     public abstract int SID { get; set; }
     public abstract string OT_Name { get; set; }
@@ -174,5 +177,5 @@ public abstract class MysteryGift : IEncounterable, IMoveset, IRelearn
     /// <summary>
     /// Checks if the <see cref="PKM"/> has the <see cref="move"/> in its current move list.
     /// </summary>
-    public bool HasMove(int move) => Moves.Contains(move);
+    public bool HasMove(ushort move) => Moves.Contains(move);
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace PKHeX.Core;
 
@@ -9,12 +9,13 @@ public sealed record EncounterInvalid : IEncounterable
 {
     public static readonly EncounterInvalid Default = new();
 
-    public int Species { get; }
-    public int Form { get; }
+    public ushort Species { get; }
+    public byte Form { get; }
     public byte LevelMin { get; }
     public byte LevelMax { get; }
     public bool EggEncounter { get; }
-    public int Generation { get; }
+    public int Generation { get; init; }
+    public EntityContext Context { get; }
     public GameVersion Version { get; }
     public bool IsShiny => false;
     public Shiny Shiny => Shiny.Never;
@@ -37,6 +38,7 @@ public sealed record EncounterInvalid : IEncounterable
         EggEncounter = pk.WasEgg;
         Generation = pk.Generation;
         Version = (GameVersion)pk.Version;
+        Context = pk.Context;
     }
 
     public PKM ConvertToPKM(ITrainerInfo tr) => ConvertToPKM(tr, EncounterCriteria.Unrestricted);

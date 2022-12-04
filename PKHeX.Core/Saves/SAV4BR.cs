@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using static System.Buffers.Binary.BinaryPrimitives;
 
@@ -11,7 +11,7 @@ public sealed class SAV4BR : SaveFile
 {
     protected internal override string ShortSummary => $"{Version} #{SaveCount:0000}";
     public override string Extension => string.Empty;
-    public override PersonalTable Personal => PersonalTable.DP;
+    public override IPersonalTable Personal => PersonalTable.DP;
     public override IReadOnlyList<ushort> HeldItems => Legal.HeldItems_DP;
 
     private const int SAVE_COUNT = 4;
@@ -97,8 +97,8 @@ public sealed class SAV4BR : SaveFile
     public override PKM BlankPKM => new BK4();
     public override Type PKMType => typeof(BK4);
 
-    public override int MaxMoveID => 467;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_4;
+    public override ushort MaxMoveID => 467;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_4;
     public override int MaxAbilityID => Legal.MaxAbilityID_4;
     public override int MaxItemID => Legal.MaxItemID_4_HGSS;
     public override int MaxBallID => Legal.MaxBallID_4;
@@ -108,8 +108,8 @@ public sealed class SAV4BR : SaveFile
     public override int Generation => 4;
     public override EntityContext Context => EntityContext.Gen4;
     protected override int GiftCountMax => 1;
-    public override int OTLength => 7;
-    public override int NickLength => 10;
+    public override int MaxStringLengthOT => 7;
+    public override int MaxStringLengthNickname => 10;
     public override int MaxMoney => 999999;
     public override int Language => (int)LanguageID.English; // prevent KOR from inhabiting
 

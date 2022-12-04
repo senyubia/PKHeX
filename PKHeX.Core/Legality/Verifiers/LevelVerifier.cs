@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System;
 using static PKHeX.Core.LegalityCheckStrings;
 
 namespace PKHeX.Core;
@@ -111,7 +111,7 @@ public sealed class LevelVerifier : Verifier
         var species = pk.Species;
 
         // This check is only applicable if it's a trade evolution that has not been evolved.
-        if (!GBRestrictions.Trade_Evolution1.Contains(enc.Species) || enc.Species != species)
+        if (!GBRestrictions.Trade_Evolution1.Contains((byte)enc.Species) || enc.Species != species)
             return false;
 
         // Context check is only applicable to gen1/2; transferring to Gen2 is a trade.
@@ -120,11 +120,12 @@ public sealed class LevelVerifier : Verifier
         if (ParseSettings.ActiveTrainer.Generation >= 3 || ParseSettings.AllowGBCartEra)
             return false;
 
+        var moves = data.Info.Moves;
         // Gen2 stuff can be traded between Gen2 games holding an Everstone, assuming it hasn't been transferred to Gen1 for special moves.
         if (enc.Generation == 2)
-            return data.Info.Moves.Any(z => z.Generation != 2);
+            return Array.Exists(moves, z => z.Generation != 2);
         // Gen1 stuff can only be un-evolved if it was never traded from the OT.
-        if (data.Info.Moves.Any(z => z.Generation != 1))
+        if (Array.Exists(moves, z => z.Generation != 1))
             return true; // traded to Gen2 for special moves
         if (pk.Format != 1)
             return true; // traded to Gen2 (current state)

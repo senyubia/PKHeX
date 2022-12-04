@@ -1,20 +1,26 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 using static PKHeX.Core.Legal;
 using static PKHeX.Core.Encounters1;
 using static PKHeX.Core.Encounters2;
-using static PKHeX.Core.Encounters3;
-using static PKHeX.Core.Encounters3GC;
-using static PKHeX.Core.Encounters4;
-using static PKHeX.Core.Encounters5;
-using static PKHeX.Core.Encounters6;
-using static PKHeX.Core.Encounters7;
-using static PKHeX.Core.Encounters7b;
+using static PKHeX.Core.Encounters3RSE;
+using static PKHeX.Core.Encounters3FRLG;
+using static PKHeX.Core.Encounters3XD;
+using static PKHeX.Core.Encounters4DPPt;
+using static PKHeX.Core.Encounters4HGSS;
+using static PKHeX.Core.Encounters5BW;
+using static PKHeX.Core.Encounters5B2W2;
+using static PKHeX.Core.Encounters6XY;
+using static PKHeX.Core.Encounters6AO;
+using static PKHeX.Core.Encounters7SM;
+using static PKHeX.Core.Encounters7USUM;
+using static PKHeX.Core.Encounters7GG;
 using static PKHeX.Core.Encounters8;
 using static PKHeX.Core.Encounters8a;
 using static PKHeX.Core.Encounters8b;
+using static PKHeX.Core.Encounters9;
 using static PKHeX.Core.EncountersGO;
 
 using static PKHeX.Core.GameVersion;
@@ -26,7 +32,11 @@ public static class EncounterSlotGenerator
     public static IEnumerable<EncounterSlot> GetPossible(PKM pk, EvoCriteria[] chain, GameVersion gameSource)
     {
         var possibleAreas = GetAreasByGame(pk, gameSource);
-        return possibleAreas.SelectMany(z => z.GetSpecies(chain));
+        foreach (var area in possibleAreas)
+        {
+            foreach (var result in area.GetSpecies(chain))
+                yield return result;
+        }
     }
 
     private static IEnumerable<EncounterArea> GetAreasByGame(PKM pk, GameVersion gameSource) => gameSource switch
@@ -69,28 +79,29 @@ public static class EncounterSlotGenerator
         return GetRawEncounterSlots(pk, chain, gameSource);
     }
 
-    public static IEnumerable<EncounterSlot> GetValidWildEncounters(PKM pk, EvoCriteria[] chain)
-    {
-        var gameSource = (GameVersion)pk.Version;
-        return GetRawEncounterSlots(pk, chain, gameSource);
-    }
-
     private static IEnumerable<EncounterArea> GetEncounterAreas(PKM pk, GameVersion gameSource)
     {
         var slots = GetEncounterTable(pk, gameSource);
         bool noMet = !pk.HasOriginalMetLocation || (pk.Format == 2 && gameSource != C);
         if (noMet)
             return slots;
+        return GetIsMatchLocation(pk, slots);
+    }
+
+    private static IEnumerable<EncounterArea> GetIsMatchLocation(PKM pk, IEnumerable<EncounterArea> areas)
+    {
         var metLocation = pk.Met_Location;
-        return slots.Where(z => z.IsMatchLocation(metLocation));
+        foreach (var area in areas)
+        {
+            if (area.IsMatchLocation(metLocation))
+                yield return area;
+        }
     }
 
     internal static EncounterSlot? GetCaptureLocation(PKM pk, EvoCriteria[] chain)
     {
-        return GetPossible(pk, chain, (GameVersion)pk.Version)
-            .OrderBy(z => !chain.Any(s => s.Species == z.Species && s.Form == z.Form))
-            .ThenBy(z => z.LevelMin)
-            .FirstOrDefault();
+        var possible = GetPossible(pk, chain, (GameVersion)pk.Version);
+        return EncounterUtil.GetMinByLevel(chain, possible);
     }
 
     private static IEnumerable<EncounterArea> GetEncounterTable(PKM pk, GameVersion game) => game switch
@@ -135,6 +146,9 @@ public static class EncounterSlotGenerator
         BD => SlotsBD,
         SP => SlotsSP,
         PLA => SlotsLA,
+
+        SL or VL => Slots,
+
         _ => Array.Empty<EncounterArea>(),
     };
 

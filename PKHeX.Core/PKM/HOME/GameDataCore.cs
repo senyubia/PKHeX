@@ -6,8 +6,10 @@ namespace PKHeX.Core;
 /// <summary>
 /// Core game data storage, format 1.
 /// </summary>
-public sealed class GameDataCore : IHomeTrack, ISpeciesForm, ITrainerID, INature, IContestStats, IContestStatsMutable, IScaledSize, ITrainerMemories, IHandlerLanguage, IBattleVersion, IHyperTrain, IFormArgument, IFavorite,
-    IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetCommon3, IRibbonSetCommon4, IRibbonSetCommon6, IRibbonSetCommon7, IRibbonSetCommon8, IRibbonSetMark8
+public sealed class GameDataCore : IHomeTrack, ISpeciesForm, ITrainerID, INature, IContestStats, IScaledSize, ITrainerMemories, IHandlerLanguage, IBattleVersion, IHyperTrain, IFormArgument, IFavorite,
+    IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetCommon3, IRibbonSetCommon4, IRibbonSetCommon6, IRibbonSetMemory6, IRibbonSetCommon7,
+    IRibbonSetCommon8, IRibbonSetMark8,
+    IRibbonSetCommon9, IRibbonSetMark9
 {
     // Internal Attributes set on creation
     public readonly byte[] Data; // Raw Storage
@@ -25,20 +27,20 @@ public sealed class GameDataCore : IHomeTrack, ISpeciesForm, ITrainerID, INature
     public ulong Tracker { get => ReadUInt64LittleEndian(Data.AsSpan(Offset + 0x00)); set => WriteUInt64LittleEndian(Data.AsSpan(Offset + 0x00), value); }
     public uint EncryptionConstant { get => ReadUInt32LittleEndian(Data.AsSpan(Offset + 0x08)); set => WriteUInt32LittleEndian(Data.AsSpan(Offset + 0x08), value); }
     public bool IsBadEgg { get => Data[Offset + 0x0C] != 0; set => Data[Offset + 0x0C] = (byte)(value ? 1 : 0); }
-    public int Species { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x0D)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x0D), (ushort)value); }
+    public ushort Species { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x0D)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x0D), value); }
     public int TID { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x0F)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x0F), (ushort)value); }
     public int SID { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x11)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x11), (ushort)value); }
     public uint EXP { get => ReadUInt32LittleEndian(Data.AsSpan(Offset + 0x13)); set => WriteUInt32LittleEndian(Data.AsSpan(Offset + 0x13), value); }
     public int Ability { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x17)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x17), (ushort)value); }
     public int AbilityNumber { get => Data[Offset + 0x19] & 7; set => Data[Offset + 0x19] = (byte)((Data[Offset + 0x19] & ~7) | (value & 7)); }
-    public bool Favorite { get => Data[Offset + 0x1A] != 0; set => Data[Offset + 0x1A] = (byte)(value ? 1 : 0); }
+    public bool IsFavorite { get => Data[Offset + 0x1A] != 0; set => Data[Offset + 0x1A] = (byte)(value ? 1 : 0); }
     public int MarkValue { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x1B)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x1B), (ushort)value); }
     public uint PID { get => ReadUInt32LittleEndian(Data.AsSpan(Offset + 0x1D)); set => WriteUInt32LittleEndian(Data.AsSpan(Offset + 0x1D), value); }
     public int Nature { get => Data[Offset + 0x21]; set => Data[Offset + 0x21] = (byte)value; }
     public int StatNature { get => Data[Offset + 0x22]; set => Data[Offset + 0x22] = (byte)value; }
     public bool FatefulEncounter { get => Data[Offset + 0x23] != 0; set => Data[Offset + 0x23] = (byte)(value ? 1 : 0); }
     public int Gender { get => Data[Offset + 0x24]; set => Data[Offset + 0x24] = (byte)value; }
-    public int Form { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x25)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x25), (ushort)value); }
+    public byte Form { get => Data[Offset + 0x25]; set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x25), value); }
     public int EV_HP { get => Data[Offset + 0x27]; set => Data[Offset + 0x27] = (byte)value; }
     public int EV_ATK { get => Data[Offset + 0x28]; set => Data[Offset + 0x28] = (byte)value; }
     public int EV_DEF { get => Data[Offset + 0x29]; set => Data[Offset + 0x29] = (byte)value; }
@@ -131,8 +133,8 @@ public sealed class GameDataCore : IHomeTrack, ISpeciesForm, ITrainerID, INature
     public bool RibbonMarkDry          { get => GetFlag(0x3B, 6); set => SetFlag(0x3B, 6, value); }
     public bool RibbonMarkSandstorm    { get => GetFlag(0x3B, 7); set => SetFlag(0x3B, 7, value); }
 
-    public int RibbonCountMemoryContest { get => Data[0x3C]; set => HasContestMemoryRibbon = (Data[0x3C] = (byte)value) != 0; }
-    public int RibbonCountMemoryBattle  { get => Data[0x3D]; set => HasBattleMemoryRibbon = (Data[0x3D] = (byte)value) != 0; }
+    public byte RibbonCountMemoryContest { get => Data[0x3C]; set => HasContestMemoryRibbon = (Data[0x3C] = value) != 0; }
+    public byte RibbonCountMemoryBattle  { get => Data[0x3D]; set => HasBattleMemoryRibbon  = (Data[0x3D] = value) != 0; }
 
     // 0x3E Ribbon 3
     public bool RibbonMarkMisty        { get => GetFlag(0x3E, 0); set => SetFlag(0x3E, 0, value); }
@@ -173,19 +175,19 @@ public sealed class GameDataCore : IHomeTrack, ISpeciesForm, ITrainerID, INature
 
     public bool RibbonMarkVigor        { get => GetFlag(0x42, 0); set => SetFlag(0x42, 0, value); }
     public bool RibbonMarkSlump        { get => GetFlag(0x42, 1); set => SetFlag(0x42, 1, value); }
-    public bool RibbonPioneer          { get => GetFlag(0x42, 2); set => SetFlag(0x42, 2, value); }
+    public bool RibbonHisui            { get => GetFlag(0x42, 2); set => SetFlag(0x42, 2, value); }
     public bool RibbonTwinklingStar    { get => GetFlag(0x42, 3); set => SetFlag(0x42, 3, value); }
-    public bool RIB44_4                { get => GetFlag(0x42, 4); set => SetFlag(0x42, 4, value); }
-    public bool RIB44_5                { get => GetFlag(0x42, 5); set => SetFlag(0x42, 5, value); }
-    public bool RIB44_6                { get => GetFlag(0x42, 6); set => SetFlag(0x42, 6, value); }
-    public bool RIB44_7                { get => GetFlag(0x42, 7); set => SetFlag(0x42, 7, value); }
+    public bool RibbonChampionPaldea   { get => GetFlag(0x42, 4); set => SetFlag(0x42, 4, value); }
+    public bool RibbonMarkJumbo        { get => GetFlag(0x42, 5); set => SetFlag(0x42, 5, value); }
+    public bool RibbonMarkMini         { get => GetFlag(0x42, 6); set => SetFlag(0x42, 6, value); }
+    public bool RibbonMarkItemfinder   { get => GetFlag(0x42, 7); set => SetFlag(0x42, 7, value); }
 
-    public bool RIB45_0                { get => GetFlag(0x43, 0); set => SetFlag(0x43, 0, value); }
-    public bool RIB45_1                { get => GetFlag(0x43, 1); set => SetFlag(0x43, 1, value); }
-    public bool RIB45_2                { get => GetFlag(0x43, 2); set => SetFlag(0x43, 2, value); }
-    public bool RIB45_3                { get => GetFlag(0x43, 3); set => SetFlag(0x43, 3, value); }
-    public bool RIB45_4                { get => GetFlag(0x43, 4); set => SetFlag(0x43, 4, value); }
-    public bool RIB45_5                { get => GetFlag(0x43, 5); set => SetFlag(0x43, 5, value); }
+    public bool RibbonMarkPartner      { get => GetFlag(0x43, 0); set => SetFlag(0x43, 0, value); }
+    public bool RibbonMarkGourmand     { get => GetFlag(0x43, 1); set => SetFlag(0x43, 1, value); }
+    public bool RibbonOnceInALifetime  { get => GetFlag(0x43, 2); set => SetFlag(0x43, 2, value); }
+    public bool RibbonMarkAlpha        { get => GetFlag(0x43, 3); set => SetFlag(0x43, 3, value); }
+    public bool RibbonMarkMightiest    { get => GetFlag(0x43, 4); set => SetFlag(0x43, 4, value); }
+    public bool RibbonMarkTitan        { get => GetFlag(0x43, 5); set => SetFlag(0x43, 5, value); }
     public bool RIB45_6                { get => GetFlag(0x43, 6); set => SetFlag(0x43, 6, value); }
     public bool RIB45_7                { get => GetFlag(0x43, 7); set => SetFlag(0x43, 7, value); }
 
@@ -393,7 +395,7 @@ public sealed class GameDataCore : IHomeTrack, ISpeciesForm, ITrainerID, INature
         if (pk is IHandlerLanguage hl)
             hl.HT_Language = HT_Language;
 
-        if (pk is IContestStatsMutable cm)
+        if (pk is IContestStats cm)
             this.CopyContestStatsTo(cm);
         if (pk is IRibbonSetAffixed affix)
             affix.AffixedRibbon = AffixedRibbon;
@@ -404,7 +406,7 @@ public sealed class GameDataCore : IHomeTrack, ISpeciesForm, ITrainerID, INature
         if (pk is IBattleVersion bv)
             bv.BattleVersion = BattleVersion;
         if (pk is IFavorite fav)
-            fav.Favorite = Favorite;
+            fav.IsFavorite = IsFavorite;
         if (pk is IHomeTrack home)
             home.Tracker = Tracker;
     }
@@ -421,11 +423,17 @@ public sealed class GameDataCore : IHomeTrack, ISpeciesForm, ITrainerID, INature
             this.CopyRibbonSetCommon4(c4);
         if (pk is IRibbonSetCommon6 c6)
             this.CopyRibbonSetCommon6(c6);
+        if (pk is IRibbonSetMemory6 m6)
+            this.CopyRibbonSetMemory6(m6);
         if (pk is IRibbonSetCommon7 c7)
             this.CopyRibbonSetCommon7(c7);
         if (pk is IRibbonSetCommon8 c8)
             this.CopyRibbonSetCommon8(c8);
         if (pk is IRibbonSetMark8 m8)
             this.CopyRibbonSetMark8(m8);
+        if (pk is IRibbonSetCommon9 c9)
+            this.CopyRibbonSetCommon9(c9);
+        if (pk is IRibbonSetMark9 m9)
+            this.CopyRibbonSetMark9(m9);
     }
 }

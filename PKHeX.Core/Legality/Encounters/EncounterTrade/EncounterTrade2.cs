@@ -1,4 +1,4 @@
-﻿using static PKHeX.Core.Species;
+using static PKHeX.Core.Species;
 
 namespace PKHeX.Core;
 
@@ -9,6 +9,7 @@ namespace PKHeX.Core;
 public sealed record EncounterTrade2 : EncounterTradeGB
 {
     public override int Generation => 2;
+    public override EntityContext Context => EntityContext.Gen2;
     public override int Location => Locations.LinkTrade2NPC;
 
     public EncounterTrade2(ushort species, byte level, ushort tid) : base(species, level, GameVersion.GSC)
@@ -27,7 +28,7 @@ public sealed record EncounterTrade2 : EncounterTradeGB
         {
             if (Gender >= 0 && Gender != pk.Gender)
                 return false;
-            if (IVs.Count != 0 && !Legal.GetIsFixedIVSequenceValidNoRand((int[])IVs, pk))
+            if (IVs.IsSpecified && !Legal.GetIsFixedIVSequenceValidNoRand(IVs, pk))
                 return false;
             if (pk.Format == 2 && pk.Met_Location is not (0 or 126))
                 return false;

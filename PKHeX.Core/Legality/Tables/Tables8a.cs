@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System;
 
 namespace PKHeX.Core;
 
@@ -10,6 +10,8 @@ public static partial class Legal
     internal const int MaxBallID_8a = (int)Ball.LAOrigin;
     internal const int MaxGameID_8a = (int)GameVersion.SP;
     internal const int MaxAbilityID_8a = MaxAbilityID_8_R2;
+
+    internal static readonly ushort[] HeldItems_LA = Array.Empty<ushort>();
 
     internal static readonly ushort[] Pouch_Items_LA =
     {
@@ -65,35 +67,6 @@ public static partial class Legal
         1795, 1796, 1797, 1798, 1799, 1800, 1801, 1802, 1803, 1804,
         1805, 1806, 1807,
         1828,
-    };
-
-    internal static readonly ushort[] HeldItems_LA = { 0 };
-
-    internal static readonly HashSet<int> HisuiOriginForms = new()
-    {
-        (int)Species.Sneasel,
-        (int)Species.Growlithe,
-        (int)Species.Arcanine,
-        (int)Species.Voltorb,
-        (int)Species.Electrode,
-        (int)Species.Qwilfish,
-        (int)Species.Sliggoo,
-        (int)Species.Goodra,
-    };
-
-    internal static readonly IReadOnlyDictionary<int, int> HisuiForm0Evolutions = new Dictionary<int, int>
-    {
-        {(int)Species.Sneasler, 1},
-    };
-
-    internal static readonly HashSet<int> HisuiVariantFormEvolutions = new()
-    {
-        (int)Species.Decidueye,
-        (int)Species.Typhlosion,
-        (int)Species.Samurott,
-        (int)Species.Lilligant,
-        (int)Species.Braviary,
-        (int)Species.Avalugg,
     };
 
     #region Moves

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using static PKHeX.Core.LegalityCheckStrings;
 
@@ -82,6 +82,7 @@ public static class EncounterVerifier
         7 => pk.IsEgg ? VerifyUnhatchedEgg(pk, Locations.LinkTrade6) : VerifyEncounterEgg7(pk),
         8 when GameVersion.BDSP.Contains((GameVersion)pk.Version) => pk.IsEgg ? VerifyUnhatchedEgg(pk, Locations.LinkTrade6NPC, Locations.Default8bNone) : VerifyEncounterEgg8BDSP(pk),
         8 => pk.IsEgg ? VerifyUnhatchedEgg(pk, Locations.LinkTrade6) : VerifyEncounterEgg8(pk),
+        9 => pk.IsEgg ? VerifyUnhatchedEgg(pk, Locations.LinkTrade6) : VerifyEncounterEgg9(pk),
         _ => new CheckResult(Severity.Invalid, LEggLocationInvalid, CheckIdentifier.Encounter),
     };
 
@@ -107,7 +108,7 @@ public static class EncounterVerifier
             return new CheckResult(Severity.Invalid, string.Format(LEggFMetLevel_0, 0), CheckIdentifier.Encounter);
 
         // Check the origin game list.
-        var met = pk.Met_Location;
+        var met = (byte)pk.Met_Location;
         var locs = pk.FRLG ? Legal.ValidMet_FRLG : pk.E ? Legal.ValidMet_E : Legal.ValidMet_RS;
         if (locs.Contains(met))
             return new CheckResult(Severity.Valid, LEggLocation, CheckIdentifier.Encounter);
@@ -205,6 +206,15 @@ public static class EncounterVerifier
         return new CheckResult(Severity.Invalid, LEggLocationInvalid, CheckIdentifier.Encounter);
     }
 
+    private static CheckResult VerifyEncounterEgg9(PKM pk)
+    {
+        if (pk.SV)
+            return VerifyEncounterEggLevelLoc(pk, 1, Legal.IsValidEggHatchLocation9);
+
+        // no other games
+        return new CheckResult(Severity.Invalid, LEggLocationInvalid, CheckIdentifier.Encounter);
+    }
+
     private static CheckResult VerifyEncounterEgg8BDSP(PKM pk)
     {
         if (pk.BDSP)
@@ -214,17 +224,17 @@ public static class EncounterVerifier
         return new CheckResult(Severity.Invalid, LEggLocationInvalid, CheckIdentifier.Encounter);
     }
 
-    private static CheckResult VerifyEncounterEggLevelLoc(PKM pk, int eggLevel, ICollection<int> MetLocations)
+    private static CheckResult VerifyEncounterEggLevelLoc(PKM pk, int eggLevel, ICollection<ushort> MetLocations)
     {
         return VerifyEncounterEggLevelLoc(pk, eggLevel, (location, _) => MetLocations.Contains(location));
     }
 
     // (hatch location, hatch version, bool result)
-    private static CheckResult VerifyEncounterEggLevelLoc(PKM pk, int eggLevel, Func<int, GameVersion, bool> isValid)
+    private static CheckResult VerifyEncounterEggLevelLoc(PKM pk, int eggLevel, Func<ushort, GameVersion, bool> isValid)
     {
         if (pk.Met_Level != eggLevel)
             return new CheckResult(Severity.Invalid, string.Format(LEggFMetLevel_0, eggLevel), CheckIdentifier.Encounter);
-        return isValid(pk.Met_Location, (GameVersion)pk.Version)
+        return isValid((ushort)pk.Met_Location, (GameVersion)pk.Version)
             ? new CheckResult(Severity.Valid, LEggLocation, CheckIdentifier.Encounter)
             : new CheckResult(Severity.Invalid, LEggLocationInvalid, CheckIdentifier.Encounter);
     }

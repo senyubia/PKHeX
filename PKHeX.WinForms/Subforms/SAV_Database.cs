@@ -21,11 +21,13 @@ public partial class SAV_Database : Form
     private readonly SaveFile SAV;
     private readonly SAVEditor BoxView;
     private readonly PKMEditor PKME_Tabs;
+    private readonly EntityInstructionBuilder UC_Builder;
 
     public SAV_Database(PKMEditor f1, SAVEditor saveditor)
     {
         InitializeComponent();
-        var UC_Builder = new EntityInstructionBuilder(() => f1.PreparePKM())
+        WinFormsUtil.TranslateInterface(this, Main.CurrentLanguage);
+        UC_Builder = new EntityInstructionBuilder(() => f1.PreparePKM())
         {
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             Width = Tab_Advanced.Width,
@@ -33,8 +35,7 @@ public partial class SAV_Database : Form
             ReadOnly = true,
         };
         Tab_Advanced.Controls.Add(UC_Builder);
-
-        WinFormsUtil.TranslateInterface(this, Main.CurrentLanguage);
+        UC_Builder.SendToBack();
 
         SAV = saveditor.SAV;
         BoxView = saveditor;
@@ -271,6 +272,7 @@ public partial class SAV_Database : Form
 
         var versions = new List<ComboItem>(GameInfo.VersionDataSource);
         versions.Insert(0, comboAny);
+        versions.RemoveAt(versions.Count - 1); // None
         CB_GameOrigin.DataSource = versions;
 
         string[] hptypes = new string[GameInfo.Strings.types.Length - 2];
@@ -413,10 +415,13 @@ public partial class SAV_Database : Form
 
         if (Main.Settings.EntityDb.FilterUnavailableSpecies)
         {
+            static bool IsPresentInGameSV  (ISpeciesForm pk) => pk is PK9 || PersonalTable.SV  .IsPresentInGame(pk.Species, pk.Form);
             static bool IsPresentInGameSWSH(ISpeciesForm pk) => pk is PK8 || PersonalTable.SWSH.IsPresentInGame(pk.Species, pk.Form);
             static bool IsPresentInGameBDSP(ISpeciesForm pk) => pk is PB8 || PersonalTable.BDSP.IsPresentInGame(pk.Species, pk.Form);
             static bool IsPresentInGamePLA (ISpeciesForm pk) => pk is PA8 || PersonalTable.LA  .IsPresentInGame(pk.Species, pk.Form);
-            if (sav is SAV8SWSH)
+            if (sav is SAV9SV)
+                result.RemoveAll(z => !IsPresentInGameSV(z.Entity));
+            else if (sav is SAV8SWSH)
                 result.RemoveAll(z => !IsPresentInGameSWSH(z.Entity));
             else if (sav is SAV8BS)
                 result.RemoveAll(z => !IsPresentInGameBDSP(z.Entity));
@@ -517,7 +522,7 @@ public partial class SAV_Database : Form
             Version = WinFormsUtil.GetIndex(CB_GameOrigin),
             HiddenPowerType = WinFormsUtil.GetIndex(CB_HPType),
 
-            Species = WinFormsUtil.GetIndex(CB_Species),
+            Species = GetU16(CB_Species),
             Ability = WinFormsUtil.GetIndex(CB_Ability),
             Nature = WinFormsUtil.GetIndex(CB_Nature),
             Item = WinFormsUtil.GetIndex(CB_HeldItem),
@@ -530,10 +535,18 @@ public partial class SAV_Database : Form
             IVType = CB_IV.SelectedIndex,
         };
 
-        settings.AddMove(WinFormsUtil.GetIndex(CB_Move1));
-        settings.AddMove(WinFormsUtil.GetIndex(CB_Move2));
-        settings.AddMove(WinFormsUtil.GetIndex(CB_Move3));
-        settings.AddMove(WinFormsUtil.GetIndex(CB_Move4));
+        static ushort GetU16(ListControl cb)
+        {
+            var val = WinFormsUtil.GetIndex(cb);
+            if (val <= 0)
+                return 0;
+            return (ushort)val;
+        }
+
+        settings.AddMove(GetU16(CB_Move1));
+        settings.AddMove(GetU16(CB_Move2));
+        settings.AddMove(GetU16(CB_Move3));
+        settings.AddMove(GetU16(CB_Move4));
 
         if (CHK_Shiny.CheckState != CheckState.Indeterminate)
             settings.SearchShiny = CHK_Shiny.CheckState == CheckState.Checked;
@@ -740,5 +753,17 @@ public partial class SAV_Database : Form
             return;
 
         ShowSet.Show(pb, Results[index].Entity);
+    }
+
+    private void B_Add_Click(object sender, EventArgs e)
+    {
+        var s = UC_Builder.Create();
+        if (s.Length == 0)
+        { WinFormsUtil.Alert(MsgBEPropertyInvalid); return; }
+
+        if (RTB_Instructions.Lines.Length != 0 && RTB_Instructions.Lines[^1].Length > 0)
+            s = Environment.NewLine + s;
+
+        RTB_Instructions.AppendText(s);
     }
 }

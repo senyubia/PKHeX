@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using static PKHeX.Core.EntityConverterResult;
 
@@ -119,6 +119,7 @@ public static class EntityConverter
         PK3 pk3 when destType == typeof(CK3) => pk3.ConvertToCK3(),
         PK3 pk3 when destType == typeof(XK3) => pk3.ConvertToXK3(),
         PK4 pk4 when destType == typeof(BK4) => pk4.ConvertToBK4(),
+        PK4 pk4 when destType == typeof(RK4) => pk4.ConvertToRK4(),
 
         PB8 pb8 when destType == typeof(PK8) => pb8.ConvertToPK8(),
         PK8 pk8 when destType == typeof(PB8) => pk8.ConvertToPB8(),
@@ -136,11 +137,16 @@ public static class EntityConverter
         PK7 pk7 => pk7.ConvertToPK8(),
         PB7 pb7 => pb7.ConvertToPK8(),
 
+        PK8 pk8 => pk8.ConvertToPK9(),
+        PB8 pb8 => pb8.ConvertToPK9(),
+        PA8 pa8 => pa8.ConvertToPK9(),
+
         // Side-Formats back to Mainline
         SK2 sk2 => sk2.ConvertToPK2(),
         CK3 ck3 => ck3.ConvertToPK3(),
         XK3 xk3 => xk3.ConvertToPK3(),
         BK4 bk4 => bk4.ConvertToPK4(),
+        RK4 rk4 => rk4.ConvertToPK4(),
 
         _ => InvalidTransfer(out result, NoTransferRoute),
     };
@@ -213,11 +219,11 @@ public static class EntityConverter
         if (pk.HeldItem > limit.MaxItemID)
             pk.HeldItem = 0;
 
-        if (pk.Nickname.Length > limit.NickLength)
-            pk.Nickname = pk.Nickname[..pk.NickLength];
+        if (pk.Nickname.Length > limit.MaxStringLengthNickname)
+            pk.Nickname = pk.Nickname[..pk.MaxStringLengthNickname];
 
-        if (pk.OT_Name.Length > limit.OTLength)
-            pk.OT_Name = pk.OT_Name[..pk.OTLength];
+        if (pk.OT_Name.Length > limit.MaxStringLengthOT)
+            pk.OT_Name = pk.OT_Name[..pk.MaxStringLengthOT];
 
         if (pk.Move1 > limit.MaxMoveID || pk.Move2 > limit.MaxMoveID || pk.Move3 > limit.MaxMoveID || pk.Move4 > limit.MaxMoveID)
             pk.ClearInvalidMoves();

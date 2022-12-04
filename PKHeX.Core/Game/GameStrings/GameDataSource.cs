@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace PKHeX.Core;
@@ -42,15 +42,21 @@ public sealed class GameDataSource
 
         var moves = Util.GetCBList(s.movelist);
         HaXMoveDataSource = moves;
-        var legal = new List<ComboItem>(moves);
-        legal.RemoveAll(m => MoveInfo.Z_Moves.Contains(m.Value));
+        var legal = new List<ComboItem>(moves.Count);
+        foreach (var m in moves)
+        {
+            if (MoveInfo.IsMoveKnowable((ushort)m.Value))
+                legal.Add(m);
+        }
         LegalMoveDataSource = legal;
 
-        VersionDataSource = GetVersionList(s);
+        var games = GetVersionList(s);
+        VersionDataSource = games;
 
         Met = new MetDataSource(s);
 
-        Empty = new ComboItem(s.Species[0], 0);
+        Empty = new ComboItem(s.itemlist[0], 0);
+        games[^1] = Empty;
     }
 
     /// <summary> Strings that this object's lists were generated with. </summary>
@@ -79,11 +85,12 @@ public sealed class GameDataSource
         return Util.GetVariedCBListBall(itemList, ball_nums, ball_vals);
     }
 
-    private static IReadOnlyList<ComboItem> GetVersionList(GameStrings s)
+    private static ComboItem[] GetVersionList(GameStrings s)
     {
         var list = s.gamelist;
         ReadOnlySpan<byte> games = stackalloc byte[]
         {
+            50, 51, // 9 sv
             47,     // 8 legends arceus
             48, 49, // 8 bdsp
             44, 45, // 8 swsh
@@ -103,14 +110,16 @@ public sealed class GameDataSource
             39, 40, 41, // 7vc2
             35, 36, 37, 38, // 7vc1
             34, // 7go
+
+            00,
         };
 
         return Util.GetUnsortedCBList(list, games);
     }
 
-    public List<ComboItem> GetItemDataSource(GameVersion game, int generation, IReadOnlyList<ushort> allowed, bool HaX = false)
+    public List<ComboItem> GetItemDataSource(GameVersion game, EntityContext context, IReadOnlyList<ushort> allowed, bool HaX = false)
     {
-        var items = Strings.GetItemStrings(generation, game);
+        var items = Strings.GetItemStrings(context, game);
         return HaX ? Util.GetCBList(items) : Util.GetCBList(items, allowed);
     }
 

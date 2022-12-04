@@ -1,7 +1,10 @@
-﻿using System;
+using System;
 
 namespace PKHeX.Core;
 
+/// <summary>
+/// Logic to apply a Hidden Power type to a <see cref="PKM"/>.
+/// </summary>
 public static class HiddenPowerApplicator
 {
     /// <summary>
@@ -13,7 +16,7 @@ public static class HiddenPowerApplicator
     {
         Span<int> IVs = stackalloc int[6];
         pk.GetIVs(IVs);
-        HiddenPower.SetIVsForType(hiddenPowerType, IVs, pk.Format);
+        HiddenPower.SetIVsForType(hiddenPowerType, IVs, pk.Context);
         pk.SetIVs(IVs);
     }
 

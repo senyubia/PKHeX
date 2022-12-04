@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace PKHeX.Core;
 
@@ -11,12 +10,13 @@ namespace PKHeX.Core;
 /// </remarks>
 public abstract record EncounterStatic(GameVersion Version) : IEncounterable, IMoveset, IEncounterMatch
 {
-    public int Species { get; init; }
-    public int Form { get; init; }
+    public ushort Species { get; init; }
+    public byte Form { get; init; }
     public virtual byte Level { get; init; }
     public virtual byte LevelMin => Level;
     public virtual byte LevelMax => Level;
     public abstract int Generation { get; }
+    public abstract EntityContext Context { get; }
 
     public virtual int Location { get; init; }
     public AbilityPermission Ability { get; init; }
@@ -36,8 +36,8 @@ public abstract record EncounterStatic(GameVersion Version) : IEncounterable, IM
 
     public Ball FixedBall => Gift ? (Ball)Ball : Core.Ball.None;
 
-    public IReadOnlyList<int> Moves { get; init; } = Array.Empty<int>();
-    public IReadOnlyList<int> IVs { get; init; } = Array.Empty<int>();
+    public Moveset Moves { get; init; }
+    public IndividualValueSet IVs { get; init; }
 
     public virtual bool EggEncounter => EggLocation != 0;
 
@@ -107,9 +107,9 @@ public abstract record EncounterStatic(GameVersion Version) : IEncounterable, IM
             s.HeightScalar = PokeSizeUtil.GetRandomScalar();
             s.WeightScalar = PokeSizeUtil.GetRandomScalar();
         }
-        if (this is IGigantamax g && pk is PK8 pg)
+        if (this is IGigantamaxReadOnly g && pk is PK8 pg)
             pg.CanGigantamax = g.CanGigantamax;
-        if (this is IDynamaxLevel d && pk is PK8 pd)
+        if (this is IDynamaxLevelReadOnly d && pk is PK8 pd)
             pd.DynamaxLevel = d.DynamaxLevel;
     }
 
@@ -158,15 +158,24 @@ public abstract record EncounterStatic(GameVersion Version) : IEncounterable, IM
 
     protected virtual void SetEncounterMoves(PKM pk, GameVersion version, int level)
     {
-        var moves = Moves.Count > 0 ? (int[])Moves : MoveLevelUp.GetEncounterMoves(pk, level, version);
-        pk.SetMoves(moves);
-        pk.SetMaximumPPCurrent(moves);
+        if (Moves.HasMoves)
+        {
+            pk.SetMoves(Moves);
+            pk.SetMaximumPPCurrent(Moves);
+        }
+        else
+        {
+            Span<ushort> moves = stackalloc ushort[4];
+            MoveLevelUp.GetEncounterMoves(moves, pk, level, version);
+            pk.SetMoves(moves);
+            pk.SetMaximumPPCurrent(moves);
+        }
     }
 
     protected void SetIVs(PKM pk)
     {
-        if (IVs.Count != 0)
-            pk.SetRandomIVsTemplate((int[])IVs, FlawlessIVCount);
+        if (IVs.IsSpecified)
+            pk.SetRandomIVsTemplate(IVs, FlawlessIVCount);
         else if (FlawlessIVCount > 0)
             pk.SetRandomIVs(minFlawless: FlawlessIVCount);
     }
@@ -176,20 +185,29 @@ public abstract record EncounterStatic(GameVersion Version) : IEncounterable, IM
         switch (this)
         {
             // Cannot trade between languages
-            case IFixedGBLanguage e:
-                return e.Language == EncounterGBLanguage.Japanese ? 1 : 2;
+            case IFixedGBLanguage { Language:     EncounterGBLanguage.Japanese } when lang != 1:
+                pk.OT_Name = "ゲーフリ";
+                return (int)LanguageID.Japanese;
+            case IFixedGBLanguage { Language: not EncounterGBLanguage.Japanese } when lang == 1:
+                pk.OT_Name = "GF";
+                return (int)LanguageID.English;
 
             // E-Reader was only available to Japanese games.
-            case EncounterStaticShadow {EReader: true}:
+            case EncounterStaticShadow { EReader: true } when lang != 1:
             // Old Sea Map was only distributed to Japanese games.
-            case EncounterStatic3 when Species == (int)Core.Species.Mew:
+            case EncounterStatic3 { Species: (int)Core.Species.Mew } when lang != 1:
                 pk.OT_Name = "ゲーフリ";
                 return (int)LanguageID.Japanese;
 
             // Deoxys for Emerald was not available for Japanese games.
-            case EncounterStatic3 when Species == (int)Core.Species.Deoxys && Version == GameVersion.E && lang == 1:
+            case EncounterStatic3 { Species: (ushort)Core.Species.Deoxys, Version: GameVersion.E } when lang == 1:
                 pk.OT_Name = "GF";
                 return (int)LanguageID.English;
+
+            // Some Pokewalker courses are only available in Japanese(/Korean) games.
+            case EncounterStatic4Pokewalker p when !p.IsCourseAvailable(lang):
+                pk.OT_Name = "ゲーフリ";
+                return (int)LanguageID.Japanese;
 
             default:
                 return lang;
@@ -232,7 +250,7 @@ public abstract record EncounterStatic(GameVersion Version) : IEncounterable, IM
         if (!IsMatchIVs(pk))
             return false;
 
-        if (this is IContestStats es && pk is IContestStats s && s.IsContestBelow(es))
+        if (this is IContestStatsReadOnly es && pk is IContestStatsReadOnly s && s.IsContestBelow(es))
             return false;
 
         // Defer to EC/PID check
@@ -248,12 +266,12 @@ public abstract record EncounterStatic(GameVersion Version) : IEncounterable, IM
 
     private bool IsMatchIVs(PKM pk)
     {
-        if (IVs.Count == 0)
+        if (!IVs.IsSpecified)
             return true; // nothing to check, IVs are random
         if (Generation <= 2 && pk.Format > 2)
             return true; // IVs are regenerated on VC transfer upward
 
-        return Legal.GetIsFixedIVSequenceValidSkipRand((int[])IVs, pk);
+        return Legal.GetIsFixedIVSequenceValidSkipRand(IVs, pk);
     }
 
     protected virtual bool IsMatchForm(PKM pk, EvoCriteria evo)

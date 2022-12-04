@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PKHeX.Core;
@@ -9,7 +9,7 @@ namespace PKHeX.Core;
 public abstract record EncounterArea(GameVersion Version) : IVersion
 {
     public int Location { get; protected init; }
-    public SlotType Type { get; protected init; } = SlotType.Any;
+    public SlotType Type { get; protected init; }
     protected abstract IReadOnlyList<EncounterSlot> Raw { get; }
 
     /// <summary>
@@ -27,6 +27,6 @@ public abstract record EncounterArea(GameVersion Version) : IVersion
     /// <returns>True if possibly originated from this area, false otherwise.</returns>
     public virtual bool IsMatchLocation(int location) => Location == location;
 
-    public bool HasSpecies(int species) => Raw.Any(z => z.Species == species);
+    public bool HasSpecies(ushort species) => Raw.Any(z => z.Species == species);
     public IEnumerable<EncounterSlot> GetSpecies(EvoCriteria[] chain) => Raw.Where(z => chain.Any(c => z.Species == c.Species));
 }

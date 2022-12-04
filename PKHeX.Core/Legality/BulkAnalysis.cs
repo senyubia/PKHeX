@@ -203,6 +203,8 @@ public sealed class BulkAnalysis
             var withOT = tr.IsFromTrainer(pk);
             var flag = pk.CurrentHandler;
             var expect = withOT ? 0 : 1;
+            if (pk.Version == 0)
+                expect = 0;
             if (flag != expect)
                 AddLine(cs, LegalityCheckStrings.LTransferCurrentHandlerInvalid, CheckIdentifier.Trainer);
 
@@ -352,17 +354,26 @@ public sealed class BulkAnalysis
 
     private static bool IsSharedVersion(PKM pp, LegalityAnalysis pa, PKM cp, LegalityAnalysis ca)
     {
-        if (pp.Version == cp.Version)
+        if (pp.Version == cp.Version || pp.Version == 0 || cp.Version == 0)
             return false;
 
         // Traded eggs retain the original version ID, only on the same generation
         if (pa.Info.Generation != ca.Info.Generation)
             return false;
 
-        if (pa.EncounterMatch.EggEncounter && pp.WasTradedEgg)
+        // Gen3/4 traded eggs do not have an Egg Location, and do not update the Version upon hatch.
+        // These eggs can obtain another trainer's TID/SID/OT and be valid with a different version ID.
+        if (pa.EncounterMatch.EggEncounter && IsTradedEggVersionNoUpdate(pp, pa))
             return false; // version doesn't update on trade
-        if (ca.EncounterMatch.EggEncounter && cp.WasTradedEgg)
+        if (ca.EncounterMatch.EggEncounter && IsTradedEggVersionNoUpdate(cp, ca))
             return false; // version doesn't update on trade
+
+        static bool IsTradedEggVersionNoUpdate(PKM pk, LegalityAnalysis la) => la.Info.Generation switch
+        {
+            3 => true, // No egg location, assume can be traded. Doesn't update version upon hatch.
+            4 => pk.WasTradedEgg, // Gen4 traded eggs do not update version upon hatch.
+            _ => false, // Gen5+ eggs have an egg location, and update the version upon hatch.
+        };
 
         return true;
     }

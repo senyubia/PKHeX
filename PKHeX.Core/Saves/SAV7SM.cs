@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using static System.Buffers.Binary.BinaryPrimitives;
 
@@ -33,7 +33,7 @@ public sealed class SAV7SM : SAV7, ISaveBlock7SM
         ReloadBattleTeams();
     }
 
-    public override PersonalTable Personal => PersonalTable.SM;
+    public override IPersonalTable Personal => PersonalTable.SM;
     public override IReadOnlyList<ushort> HeldItems => Legal.HeldItems_SM;
     protected override SaveFile CloneInternal() => new SAV7SM((byte[])Data.Clone());
 
@@ -63,8 +63,8 @@ public sealed class SAV7SM : SAV7, ISaveBlock7SM
     #endregion
 
     public override int EventFlagCount => 4000;
-    public override int MaxMoveID => Legal.MaxMoveID_7;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_7;
+    public override ushort MaxMoveID => Legal.MaxMoveID_7;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_7;
     public override int MaxItemID => Legal.MaxItemID_7;
     public override int MaxAbilityID => Legal.MaxAbilityID_7;
 

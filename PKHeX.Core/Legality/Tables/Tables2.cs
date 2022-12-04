@@ -1,4 +1,4 @@
-﻿using static PKHeX.Core.Species;
+using static PKHeX.Core.Species;
 
 namespace PKHeX.Core;
 
@@ -21,7 +21,7 @@ public static partial class Legal
         7, 54, 55, 58, 59, 61, 66, 67, 68, 69, 71, 127, 128, 130, 133, 134, 175, 178,
     };
 
-    internal static readonly ushort[] Pouch_Key_C = ArrayUtil.ConcatAll(Pouch_Key_GS, new ushort[]{70, 115, 116, 129});
+    internal static readonly ushort[] Pouch_Key_C = ArrayUtil.ConcatAll(Pouch_Key_GS, stackalloc ushort[] {70, 115, 116, 129});
 
     internal static readonly ushort[] Pouch_TMHM_GSC = {
         191, 192, 193, 194, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249,
@@ -29,22 +29,9 @@ public static partial class Legal
 
     internal static readonly ushort[] HeldItems_GSC = ArrayUtil.ConcatAll(Pouch_Items_GSC, Pouch_Ball_GSC, Pouch_TMHM_GSC);
 
-    internal static readonly int[] TMHM_GSC =
-    {
-        223, 029, 174, 205, 046, 092, 192, 249, 244, 237,
-        241, 230, 173, 059, 063, 196, 182, 240, 202, 203,
-        218, 076, 231, 225, 087, 089, 216, 091, 094, 247,
-        189, 104, 008, 207, 214, 188, 201, 126, 129, 111,
-        009, 138, 197, 156, 213, 168, 211, 007, 210, 171,
-
-        015, 019, 057, 070, 148, 250, 127,
-    };
-
-    internal static readonly int[] Tutors_GSC = { (int)Move.Flamethrower, (int)Move.Thunderbolt, (int)Move.IceBeam };
-
     internal static readonly bool[] ReleasedHeldItems_2 = GetPermitList(MaxItemID_2, HeldItems_GSC);
 
-    internal static bool TransferSpeciesDefaultAbilityGen2(int species)
+    internal static bool TransferSpeciesDefaultAbilityGen2(ushort species)
     {
         System.Diagnostics.Debug.Assert((uint)species <= MaxSpeciesID_2);
         return species is (int)Gastly or (int)Haunter or (int)Gengar

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using static PKHeX.Core.Encounters8Nest;
 using static PKHeX.Core.AbilityPermission;
 
@@ -8,14 +8,15 @@ namespace PKHeX.Core;
 /// Generation 8 Nest Encounter (Raid)
 /// </summary>
 /// <inheritdoc cref="EncounterStatic"/>
-public abstract record EncounterStatic8Nest<T>(GameVersion Version) : EncounterStatic(Version), IGigantamax, IDynamaxLevel where T : EncounterStatic8Nest<T>
+public abstract record EncounterStatic8Nest<T>(GameVersion Version) : EncounterStatic(Version), IGigantamaxReadOnly, IDynamaxLevelReadOnly where T : EncounterStatic8Nest<T>
 {
     public sealed override int Generation => 8;
+    public override EntityContext Context => EntityContext.Gen8;
     public static Func<PKM, T, bool>? VerifyCorrelation { private get; set; }
     public static Action<PKM, T, EncounterCriteria>? GenerateData { private get; set; }
 
-    public bool CanGigantamax { get; set; }
-    public byte DynamaxLevel { get; set; }
+    public bool CanGigantamax { get; init; }
+    public byte DynamaxLevel { get; init; }
     public override int Location { get => SharedNest; init { } }
 
     public override bool IsMatchExact(PKM pk, EvoCriteria evo)
@@ -49,12 +50,12 @@ public abstract record EncounterStatic8Nest<T>(GameVersion Version) : EncounterS
             var num = pk.AbilityNumber;
             if (num == 4)
             {
-                if (Ability is not OnlyHidden && !AbilityVerifier.CanAbilityPatch(8, PersonalTable.SWSH.GetFormEntry(Species, Form).Abilities, pk.Species))
+                if (Ability is not OnlyHidden && !AbilityVerifier.CanAbilityPatch(8, PersonalTable.SWSH.GetFormEntry(Species, Form), pk.Species))
                     return EncounterMatchRating.DeferredErrors;
             }
             else if (Ability.IsSingleValue(out int index) && 1 << index != num) // Fixed regular ability
             {
-                if (Ability is OnlyFirst or OnlySecond && !AbilityVerifier.CanAbilityCapsule(8, PersonalTable.SWSH.GetFormEntry(Species, Form).Abilities))
+                if (Ability is OnlyFirst or OnlySecond && !AbilityVerifier.CanAbilityCapsule(8, PersonalTable.SWSH.GetFormEntry(Species, Form)))
                     return EncounterMatchRating.DeferredErrors;
             }
         }

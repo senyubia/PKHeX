@@ -2,17 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
-    <LangVersion>10</LangVersion>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <Description>Pokémon C# Class Library</Description>
     <RootNamespace>PKHeX.Core</RootNamespace>
-    <NeutralLanguage>en</NeutralLanguage>
-    <Company>Project Pokémon</Company>
-    <Copyright>Kaphotics</Copyright>
-    <Version>22.06.26</Version>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -29,7 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\icon.png" Pack="true" PackagePath=""/>
+    <None Include="..\icon.png" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -37,8 +28,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="IndexRange" Version="1.0.0" />
-    <PackageReference Include="System.Memory" Version="4.5.4" />
+    <PackageReference Include="IndexRange" Version="1.0.2" />
+    <PackageReference Include="System.Memory" Version="4.5.5" />
   </ItemGroup>
 
   <ItemGroup>

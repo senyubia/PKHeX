@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace PKHeX.Core;
@@ -17,6 +16,7 @@ public sealed class PCD : DataMysteryGift, IRibbonSetEvent3, IRibbonSetEvent4
 {
     public const int Size = 0x358; // 856
     public override int Generation => 4;
+    public override EntityContext Context => EntityContext.Gen4;
 
     public override byte Level
     {
@@ -78,14 +78,14 @@ public sealed class PCD : DataMysteryGift, IRibbonSetEvent3, IRibbonSetEvent4
 
     public ushort CardCompatibility => ReadUInt16LittleEndian(Data.AsSpan(0x14C)); // rest of bytes we don't really care about
 
-    public override int Species { get => Gift.IsManaphyEgg ? 490 : Gift.Species; set => Gift.Species = value; }
-    public override IReadOnlyList<int> Moves { get => Gift.Moves; set => Gift.Moves = value; }
+    public override ushort Species { get => Gift.IsManaphyEgg ? (ushort)490 : Gift.Species; set => Gift.Species = value; }
+    public override Moveset Moves { get => Gift.Moves; set => Gift.Moves = value; }
     public override int HeldItem { get => Gift.HeldItem; set => Gift.HeldItem = value; }
     public override bool IsShiny => Gift.IsShiny;
     public override Shiny Shiny => Gift.Shiny;
     public override bool IsEgg { get => Gift.IsEgg; set => Gift.IsEgg = value; }
     public override int Gender { get => Gift.Gender; set => Gift.Gender = value; }
-    public override int Form { get => Gift.Form; set => Gift.Form = value; }
+    public override byte Form { get => Gift.Form; set => Gift.Form = value; }
     public override int TID { get => Gift.TID; set => Gift.TID = value; }
     public override int SID { get => Gift.SID; set => Gift.SID = value; }
     public override string OT_Name { get => Gift.OT_Name; set => Gift.OT_Name = value; }
@@ -167,7 +167,7 @@ public sealed class PCD : DataMysteryGift, IRibbonSetEvent3, IRibbonSetEvent4
         if (wc.OT_Gender < 3 && wc.OT_Gender != pk.OT_Gender) return false;
 
         // Milotic is the only gift to come with Contest stats.
-        if (wc.Species == (int)Core.Species.Milotic && pk is IContestStats s && s.IsContestBelow(wc))
+        if (wc.Species == (int)Core.Species.Milotic && pk is IContestStatsReadOnly s && s.IsContestBelow(wc))
             return false;
 
         if (IsRandomPID())

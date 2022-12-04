@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace PKHeX.Core;
 
 /// <summary> Generation 3 <see cref="PKM"/> format, exclusively for Pokémon Colosseum. </summary>
-public sealed class CK3 : G3PKM, IShadowPKM
+public sealed class CK3 : G3PKM, IShadowCapture
 {
     private static readonly ushort[] Unused =
     {
@@ -35,7 +35,7 @@ public sealed class CK3 : G3PKM, IShadowPKM
 
     // Future Attributes
     public override ushort SpeciesID3 { get => ReadUInt16BigEndian(Data.AsSpan(0x00)); set => WriteUInt16BigEndian(Data.AsSpan(0x00), value); } // raw access
-    public override int Species { get => SpeciesConverter.GetG4Species(SpeciesID3); set => SpeciesID3 = (ushort)SpeciesConverter.GetG3Species(value); }
+    public override ushort Species { get => SpeciesConverter.GetG4Species(SpeciesID3); set => SpeciesID3 = SpeciesConverter.GetG3Species(value); }
     // 02-04 unused
     public override uint PID { get => ReadUInt32BigEndian(Data.AsSpan(0x04)); set => WriteUInt32BigEndian(Data.AsSpan(0x04), value); }
     public override int Version { get => GetGBAVersionID(Data[0x08]); set => Data[0x08] = GetGCVersionID(value); }
@@ -59,16 +59,16 @@ public sealed class CK3 : G3PKM, IShadowPKM
     // Not that the program cares
 
     // Moves
-    public override int Move1 { get => ReadUInt16BigEndian(Data.AsSpan(0x78)); set => WriteUInt16BigEndian(Data.AsSpan(0x78), (ushort)value); }
+    public override ushort Move1 { get => ReadUInt16BigEndian(Data.AsSpan(0x78)); set => WriteUInt16BigEndian(Data.AsSpan(0x78), value); }
     public override int Move1_PP { get => Data[0x7A]; set => Data[0x7A] = (byte)value; }
     public override int Move1_PPUps { get => Data[0x7B]; set => Data[0x7B] = (byte)value; }
-    public override int Move2 { get => ReadUInt16BigEndian(Data.AsSpan(0x7C)); set => WriteUInt16BigEndian(Data.AsSpan(0x7C), (ushort)value); }
+    public override ushort Move2 { get => ReadUInt16BigEndian(Data.AsSpan(0x7C)); set => WriteUInt16BigEndian(Data.AsSpan(0x7C), value); }
     public override int Move2_PP { get => Data[0x7E]; set => Data[0x7E] = (byte)value; }
     public override int Move2_PPUps { get => Data[0x7F]; set => Data[0x7F] = (byte)value; }
-    public override int Move3 { get => ReadUInt16BigEndian(Data.AsSpan(0x80)); set => WriteUInt16BigEndian(Data.AsSpan(0x80), (ushort)value); }
+    public override ushort Move3 { get => ReadUInt16BigEndian(Data.AsSpan(0x80)); set => WriteUInt16BigEndian(Data.AsSpan(0x80), value); }
     public override int Move3_PP { get => Data[0x82]; set => Data[0x82] = (byte)value; }
     public override int Move3_PPUps { get => Data[0x83]; set => Data[0x83] = (byte)value; }
-    public override int Move4 { get => ReadUInt16BigEndian(Data.AsSpan(0x84)); set => WriteUInt16BigEndian(Data.AsSpan(0x84), (ushort)value); }
+    public override ushort Move4 { get => ReadUInt16BigEndian(Data.AsSpan(0x84)); set => WriteUInt16BigEndian(Data.AsSpan(0x84), value); }
     public override int Move4_PP { get => Data[0x86]; set => Data[0x86] = (byte)value; }
     public override int Move4_PPUps { get => Data[0x87]; set => Data[0x87] = (byte)value; }
 
@@ -134,7 +134,10 @@ public sealed class CK3 : G3PKM, IShadowPKM
         get => Math.Min((ushort)31, ReadUInt16BigEndian(Data.AsSpan(0xAE)));
         set => WriteUInt16BigEndian(Data.AsSpan(0xAE), (ushort)(value & 0x1F)); }
 
-    public override int OT_Friendship { get => Data[0xB0]; set => Data[0xB0] = (byte)value; }
+    public override int OT_Friendship {
+        get => Math.Min((ushort)0xFF, ReadUInt16BigEndian(Data.AsSpan(0xB0)));
+        set => WriteUInt16BigEndian(Data.AsSpan(0xB0), (ushort)(value & 0xFF));
+    }
 
     // Contest
     public override byte CNT_Cool   { get => Data[0xB2]; set => Data[0xB2] = value; }
@@ -142,11 +145,11 @@ public sealed class CK3 : G3PKM, IShadowPKM
     public override byte CNT_Cute   { get => Data[0xB4]; set => Data[0xB4] = value; }
     public override byte CNT_Smart  { get => Data[0xB5]; set => Data[0xB5] = value; }
     public override byte CNT_Tough  { get => Data[0xB6]; set => Data[0xB6] = value; }
-    public override int RibbonCountG3Cool { get => Data[0xB7]; set => Data[0xB7] = (byte)value; }
-    public override int RibbonCountG3Beauty { get => Data[0xB8]; set => Data[0xB8] = (byte)value; }
-    public override int RibbonCountG3Cute { get => Data[0xB9]; set => Data[0xB9] = (byte)value; }
-    public override int RibbonCountG3Smart { get => Data[0xBA]; set => Data[0xBA] = (byte)value; }
-    public override int RibbonCountG3Tough { get => Data[0xBB]; set => Data[0xBB] = (byte)value; }
+    public override byte RibbonCountG3Cool   { get => Data[0xB7]; set => Data[0xB7] = value; }
+    public override byte RibbonCountG3Beauty { get => Data[0xB8]; set => Data[0xB8] = value; }
+    public override byte RibbonCountG3Cute   { get => Data[0xB9]; set => Data[0xB9] = value; }
+    public override byte RibbonCountG3Smart  { get => Data[0xBA]; set => Data[0xBA] = value; }
+    public override byte RibbonCountG3Tough  { get => Data[0xBB]; set => Data[0xBB] = value; }
     public override byte CNT_Sheen { get => Data[0xBC]; set => Data[0xBC] = value; }
 
     // Ribbons
@@ -189,6 +192,7 @@ public sealed class CK3 : G3PKM, IShadowPKM
     public PK3 ConvertToPK3()
     {
         var pk = ConvertTo<PK3>();
+        pk.FlagHasSpecies = pk.SpeciesID3 != 0; // Update Flag
         pk.RefreshChecksum();
         return pk;
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using static PKHeX.Core.LegalityCheckStrings;
 
 namespace PKHeX.Core;
@@ -33,8 +33,6 @@ public sealed class IndividualValueVerifier : Verifier
         }
     }
 
-    public static bool AllIVsEqual(PKM pk) => AllIVsEqual(pk, pk.IV_HP);
-
     private static bool AllIVsEqual(PKM pk, int hpiv)
     {
         return (pk.IV_ATK == hpiv) && (pk.IV_DEF == hpiv) && (pk.IV_SPA == hpiv) && (pk.IV_SPD == hpiv) && (pk.IV_SPE == hpiv);
@@ -47,8 +45,8 @@ public sealed class IndividualValueVerifier : Verifier
 
         Span<int> IVs = stackalloc int[6];
         g.GetIVs(IVs);
-        var ivflag = IVs.Find(iv => (byte)(iv - 0xFC) < 3);
-        if (ivflag == 0) // Random IVs
+        var ivflag = IVs.Find(static iv => (byte)(iv - 0xFC) < 3);
+        if (ivflag == default) // Random IVs
         {
             bool valid = Legal.GetIsFixedIVSequenceValidSkipRand(IVs, data.Entity);
             if (!valid)
@@ -75,9 +73,15 @@ public sealed class IndividualValueVerifier : Verifier
     {
         var pk = data.Entity;
         if (pk.GO)
+        {
             VerifyIVsGoTransfer(data);
-        else if (pk.AbilityNumber == 4 && !AbilityVerifier.CanAbilityPatch(pk.Format, pk.PersonalInfo.Abilities, pk.Species))
-            VerifyIVsFlawless(data, 2); // Chain of 10 yields 5% HA and 2 flawless IVs
+        }
+        else if (pk.AbilityNumber == 4)
+        {
+            var abilities = (IPersonalAbility12H)pk.PersonalInfo;
+            if (!AbilityVerifier.CanAbilityPatch(pk.Format, abilities, pk.Species))
+                VerifyIVsFlawless(data, 2); // Chain of 10 yields 5% HA and 2 flawless IVs
+        }
     }
 
     private void VerifyIVsGen8(LegalityAnalysis data)
@@ -94,7 +98,7 @@ public sealed class IndividualValueVerifier : Verifier
     {
         if (w is EncounterSlot6XY xy)
         {
-            if (PersonalTable.XY[data.EncounterMatch.Species].IsEggGroup(15)) // Undiscovered
+            if (PersonalTable.XY[xy.Species].IsEggGroup(15)) // Undiscovered
                 VerifyIVsFlawless(data, 3);
             if (xy.IsFriendSafari)
                 VerifyIVsFlawless(data, 2);

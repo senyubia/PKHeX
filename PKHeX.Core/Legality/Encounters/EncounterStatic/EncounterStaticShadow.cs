@@ -1,5 +1,3 @@
-﻿using System.Collections.Generic;
-
 namespace PKHeX.Core;
 
 /// <summary>
@@ -14,13 +12,12 @@ public sealed record EncounterStaticShadow(GameVersion Version, byte ID, short G
 {
     // ReSharper restore NotAccessedPositionalProperty.Global
     public override int Generation => 3;
+    public override EntityContext Context => EntityContext.Gen3;
 
     /// <summary>
     /// Originates from the EReader scans (Japanese Only)
     /// </summary>
-    public bool EReader => ReferenceEquals(IVs, EReaderEmpty);
-
-    public static readonly IReadOnlyList<int> EReaderEmpty = new[] {0,0,0,0,0,0};
+    public bool EReader => Location == 128; // @ Card e Room (Japanese games only)
 
     protected override bool IsMatchLocation(PKM pk)
     {
@@ -88,7 +85,7 @@ public sealed record EncounterStaticShadow(GameVersion Version, byte ID, short G
     private void SetPINGA_EReader(PKM pk)
     {
         // E-Reader have all IVs == 0
-        for (int i = 0; i < IVs.Count; i++)
+        for (int i = 0; i < 6; i++)
             pk.SetIV(i, 0);
 
         // All E-Reader shadows are actually nature/gender locked.

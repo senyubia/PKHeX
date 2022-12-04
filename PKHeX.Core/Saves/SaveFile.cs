@@ -32,7 +32,7 @@ public abstract class SaveFile : ITrainerInfo, IGameValueLimit, IBoxDetailWallpa
     public SaveFile Clone()
     {
         var sav = CloneInternal();
-        sav.Metadata = Metadata;
+        sav.Metadata = Metadata with {SAV = sav};
         return sav;
     }
 
@@ -87,11 +87,11 @@ public abstract class SaveFile : ITrainerInfo, IGameValueLimit, IBoxDetailWallpa
     // Offsets
 
     #region Stored PKM Limits
-    public abstract PersonalTable Personal { get; }
-    public abstract int OTLength { get; }
-    public abstract int NickLength { get; }
-    public abstract int MaxMoveID { get; }
-    public abstract int MaxSpeciesID { get; }
+    public abstract IPersonalTable Personal { get; }
+    public abstract int MaxStringLengthOT { get; }
+    public abstract int MaxStringLengthNickname { get; }
+    public abstract ushort MaxMoveID { get; }
+    public abstract ushort MaxSpeciesID { get; }
     public abstract int MaxAbilityID { get; }
     public abstract int MaxItemID { get; }
     public abstract int MaxBallID { get; }
@@ -119,8 +119,8 @@ public abstract class SaveFile : ITrainerInfo, IGameValueLimit, IBoxDetailWallpa
     public virtual IReadOnlyList<InventoryPouch> Inventory { get => Array.Empty<InventoryPouch>(); set { } }
 
     #region Mystery Gift
-    protected virtual int GiftCountMax { get; } = int.MinValue;
-    protected virtual int GiftFlagMax { get; } = 0x800;
+    protected virtual int GiftCountMax => int.MinValue;
+    protected virtual int GiftFlagMax => 0x800;
     protected int WondercardData { get; set; } = int.MinValue;
     public bool HasWondercards => WondercardData > -1;
     protected virtual bool[] MysteryGiftReceivedFlags { get => Array.Empty<bool>(); set { } }
@@ -140,7 +140,7 @@ public abstract class SaveFile : ITrainerInfo, IGameValueLimit, IBoxDetailWallpa
     #region Player Info
     public virtual int Gender { get; set; }
     public virtual int Language { get => -1; set { } }
-    public virtual int Game { get => -1; set { } }
+    public virtual int Game { get => (int)GameVersion.Any; set { } }
     public virtual int TID { get; set; }
     public virtual int SID { get; set; }
     public virtual string OT { get; set; } = "PKHeX";
@@ -232,6 +232,7 @@ public abstract class SaveFile : ITrainerInfo, IGameValueLimit, IBoxDetailWallpa
             int ctr = 0;
             foreach (var exist in value.Where(pk => pk.Species != 0))
                 SetPartySlot(exist, PartyBuffer, GetPartyOffset(ctr++));
+            PartyCount = ctr;
             for (int i = ctr; i < 6; i++)
                 SetPartySlot(BlankPKM, PartyBuffer, GetPartyOffset(i));
         }
@@ -244,8 +245,8 @@ public abstract class SaveFile : ITrainerInfo, IGameValueLimit, IBoxDetailWallpa
     #region Daycare
     public bool HasDaycare => DaycareOffset > -1;
     protected int DaycareOffset { get; set; } = int.MinValue;
-    public virtual int DaycareSeedSize { get; } = 0;
-    public int DaycareIndex = 0;
+    public virtual int DaycareSeedSize => 0;
+    public int DaycareIndex;
     public virtual bool HasTwoDaycares => false;
     public virtual int GetDaycareSlotOffset(int loc, int slot) => -1;
     public virtual uint? GetDaycareEXP(int loc, int slot) => null;
@@ -418,12 +419,38 @@ public abstract class SaveFile : ITrainerInfo, IGameValueLimit, IBoxDetailWallpa
     #region Pokédex
     public int PokeDex { get; protected set; } = int.MinValue;
     public bool HasPokeDex => PokeDex > -1;
-    public virtual bool GetSeen(int species) => false;
-    public virtual void SetSeen(int species, bool seen) { }
-    public virtual bool GetCaught(int species) => false;
-    public virtual void SetCaught(int species, bool caught) { }
-    public int SeenCount => HasPokeDex ? Enumerable.Range(1, MaxSpeciesID).Count(GetSeen) : 0;
-    public int CaughtCount => HasPokeDex ? Enumerable.Range(1, MaxSpeciesID).Count(GetCaught) : 0;
+    public virtual bool GetSeen(ushort species) => false;
+    public virtual void SetSeen(ushort species, bool seen) { }
+    public virtual bool GetCaught(ushort species) => false;
+    public virtual void SetCaught(ushort species, bool caught) { }
+    public int SeenCount
+    {
+        get
+        {
+            int ctr = 0;
+            for (ushort i = 1; i <= MaxSpeciesID; i++)
+            {
+                if (GetSeen(i))
+                    ctr++;
+            }
+            return ctr;
+        }
+    }
+
+    /// <summary> Count of unique Species Caught (Owned) </summary>
+    public int CaughtCount
+    {
+        get
+        {
+            int ctr = 0;
+            for (ushort i = 1; i <= MaxSpeciesID; i++)
+            {
+                if (GetCaught(i))
+                    ctr++;
+            }
+            return ctr;
+        }
+    }
     public decimal PercentSeen => (decimal) SeenCount / MaxSpeciesID;
     public decimal PercentCaught => (decimal)CaughtCount / MaxSpeciesID;
     #endregion
@@ -508,7 +535,7 @@ public abstract class SaveFile : ITrainerInfo, IGameValueLimit, IBoxDetailWallpa
     public int NextOpenBoxSlot(int lastKnownOccupied = -1)
     {
         var storage = BoxBuffer.AsSpan();
-        int count = BoxSlotCount * BoxCount;
+        int count = SlotCount;
         for (int i = lastKnownOccupied + 1; i < count; i++)
         {
             int offset = GetBoxSlotOffset(i);
@@ -741,7 +768,7 @@ public abstract class SaveFile : ITrainerInfo, IGameValueLimit, IBoxDetailWallpa
     {
         var storage = BoxBuffer.AsSpan();
 
-        if (BoxEnd < 0)
+        if ((uint)BoxEnd >= BoxCount)
             BoxEnd = BoxCount - 1;
 
         var blank = GetDataForBox(BlankPKM);
@@ -778,7 +805,7 @@ public abstract class SaveFile : ITrainerInfo, IGameValueLimit, IBoxDetailWallpa
     /// <returns>Count of modified <see cref="PKM"/> slots.</returns>
     public int ModifyBoxes(Action<PKM> action, int BoxStart = 0, int BoxEnd = -1)
     {
-        if (BoxEnd < 0)
+        if ((uint)BoxEnd >= BoxCount)
             BoxEnd = BoxCount - 1;
 
         var storage = BoxBuffer.AsSpan();

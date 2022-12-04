@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace PKHeX.Core;
 
@@ -12,10 +12,11 @@ namespace PKHeX.Core;
 public sealed record EncounterSlot2 : EncounterSlot, INumberedSlot
 {
     public override int Generation => 2;
+    public override EntityContext Context => EntityContext.Gen2;
     public byte SlotNumber { get; }
     public override Ball FixedBall => Ball.Poke;
 
-    public EncounterSlot2(EncounterArea2 area, byte species, byte min, byte max, byte slot) : base(area, species, species == 201 ? FormRandom : 0, min, max)
+    public EncounterSlot2(EncounterArea2 area, byte species, byte min, byte max, byte slot) : base(area, species, species == 201 ? FormRandom : (byte)0, min, max)
     {
         SlotNumber = slot;
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using static System.Buffers.Binary.BinaryPrimitives;
 
@@ -12,7 +12,7 @@ public sealed class SAV1Stadium : SAV_STADIUM
     public override int SaveRevision => Japanese ? 0 : 1;
     public override string SaveRevisionString => Japanese ? "J" : "U";
 
-    public override PersonalTable Personal => PersonalTable.Y;
+    public override IPersonalTable Personal => PersonalTable.Y;
     public override int MaxEV => ushort.MaxValue;
     public override IReadOnlyList<ushort> HeldItems => Array.Empty<ushort>();
     public override GameVersion Version { get; protected set; } = GameVersion.Stadium;
@@ -24,13 +24,13 @@ public sealed class SAV1Stadium : SAV_STADIUM
     private int StringLength => Japanese ? StringLengthJ : StringLengthU;
     private const int StringLengthJ = 6;
     private const int StringLengthU = 11;
-    public override int OTLength => StringLength;
-    public override int NickLength => StringLength;
+    public override int MaxStringLengthOT => StringLength;
+    public override int MaxStringLengthNickname => StringLength;
     public override int BoxCount => Japanese ? 8 : 12;
     public override int BoxSlotCount => Japanese ? 30 : 20;
 
-    public override int MaxMoveID => Legal.MaxMoveID_1;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_1;
+    public override ushort MaxMoveID => Legal.MaxMoveID_1;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_1;
     public override int MaxAbilityID => Legal.MaxAbilityID_1;
     public override int MaxItemID => Legal.MaxItemID_1;
 

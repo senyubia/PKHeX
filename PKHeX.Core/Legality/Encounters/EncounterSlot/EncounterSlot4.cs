@@ -7,6 +7,7 @@ namespace PKHeX.Core;
 public sealed record EncounterSlot4 : EncounterSlot, IMagnetStatic, INumberedSlot, IGroundTypeTile, ISlotRNGType
 {
     public override int Generation => 4;
+    public override EntityContext Context => EntityContext.Gen4;
     public GroundTileAllowed GroundTile => ((EncounterArea4)Area).GroundTile;
 
     public byte StaticIndex { get; }
@@ -43,6 +44,22 @@ public sealed record EncounterSlot4 : EncounterSlot, IMagnetStatic, INumberedSlo
                 return EncounterMatchRating.PartialMatch;
         }
         return base.GetMatchRating(pk);
+    }
+
+    protected override void SetPINGA(PKM pk, EncounterCriteria criteria)
+    {
+        int ctr = 0;
+        do
+        {
+            base.SetPINGA(pk, criteria);
+            var pidiv = MethodFinder.Analyze(pk);
+            var frames = FrameFinder.GetFrames(pidiv, pk);
+            foreach (var frame in frames)
+            {
+                if (frame.IsSlotCompatibile(this, pk))
+                    return;
+            }
+        } while (ctr++ < 10_000);
     }
 
     private Ball GetRequiredBallValue()

@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 
 namespace PKHeX.Core;
 
 /// <summary>
 /// Egg Encounter Data
 /// </summary>
-public sealed record EncounterEgg(int Species, int Form, byte Level, int Generation, GameVersion Version) : IEncounterable
+public sealed record EncounterEgg(ushort Species, byte Form, byte Level, int Generation, GameVersion Version, EntityContext Context) : IEncounterable
 {
     public string Name => "Egg";
     public string LongName => "Egg";
@@ -21,6 +21,7 @@ public sealed record EncounterEgg(int Species, int Form, byte Level, int Generat
     public AbilityPermission Ability => AbilityPermission.Any12H;
 
     public bool CanHaveVoltTackle => Species is (int)Core.Species.Pichu && (Generation > 3 || Version is GameVersion.E);
+    public bool CanInheritMoves => Breeding.GetCanInheritMoves(Species);
 
     public PKM ConvertToPKM(ITrainerInfo tr) => ConvertToPKM(tr, EncounterCriteria.Unrestricted);
 
@@ -58,6 +59,7 @@ public sealed record EncounterEgg(int Species, int Form, byte Level, int Generat
             {
                 pk.Met_Location = Locations.HatchLocationC;
                 pk.Met_Level = 1;
+                ((PK2)pk).Met_TimeOfDay = Util.Rand.Next(1, 4); // Morning | Day | Night
             }
             return pk;
         }
@@ -83,6 +85,16 @@ public sealed record EncounterEgg(int Species, int Form, byte Level, int Generat
         {
             s.HeightScalar = PokeSizeUtil.GetRandomScalar();
             s.WeightScalar = PokeSizeUtil.GetRandomScalar();
+            if (pk is IScaledSize3 s3)
+                s3.Scale = PokeSizeUtil.GetRandomScalar();
+        }
+
+        if (pk is ITeraType tera)
+        {
+            var type = Tera9RNG.GetTeraTypeFromPersonal(Species, Form, Util.Rand.Rand64());
+            tera.TeraTypeOriginal = (MoveType)type;
+            if (criteria.TeraType != -1 && type != criteria.TeraType)
+                tera.SetTeraType(type); // sets the override type
         }
 
         return pk;
@@ -93,7 +105,7 @@ public sealed record EncounterEgg(int Species, int Form, byte Level, int Generat
         switch (Species)
         {
             case (int)Core.Species.Minior:
-                pk.Form = Util.Rand.Next(7, 14);
+                pk.Form = (byte)Util.Rand.Next(7, 14);
                 break;
             case (int)Core.Species.Scatterbug or (int)Core.Species.Spewpa or (int)Core.Species.Vivillon:
                 if (sav is IRegionOrigin o)
@@ -134,6 +146,9 @@ public sealed record EncounterEgg(int Species, int Form, byte Level, int Generat
     {
         pk.Met_Level = EggStateLegality.GetEggLevelMet(Version, Generation);
         pk.Met_Location = Math.Max(0, EggStateLegality.GetEggHatchLocation(Version, Generation));
+
+        if (pk is IObedienceLevel l)
+            l.Obedience_Level = (byte)pk.Met_Level;
     }
 
     private void SetEncounterMoves(PKM pk, GameVersion version)

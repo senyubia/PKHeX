@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using FluentAssertions;
 using PKHeX.Core;
@@ -45,7 +45,7 @@ public class ShowdownSetTests
         var la = new LegalityAnalysis(pk);
         Assert.True(la.Valid);
 
-        var test = EncounterMovesetGenerator.GenerateEncounters(pk7, info).ToList();
+        var test = EncounterMovesetGenerator.GenerateEncounters(pk7, info, pk7.Moves).ToList();
         foreach (var t in test)
         {
             var convert = t.ConvertToPKM(info);
@@ -180,6 +180,27 @@ public class ShowdownSetTests
 
         var la = new LegalityAnalysis(pk3);
         la.Valid.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(256)]
+    public void BadFriendshipNotParsed(int value)
+    {
+        string input = $@"Eevee\nFriendship: {value}";
+        var set = new ShowdownSet(input);
+        set.Level.Should().NotBe(value);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(0)]
+    [InlineData(101)]
+    public void BadLevelNotParsed(int value)
+    {
+        string input = $@"Eevee\nLevel: {value}";
+        var set = new ShowdownSet(input);
+        set.Level.Should().NotBe(value);
     }
 
     private const string LowLevelElectrode =

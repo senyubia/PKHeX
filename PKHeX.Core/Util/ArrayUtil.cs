@@ -63,7 +63,7 @@ public static class ArrayUtil
         return result;
     }
 
-    public static void SetBitFlagArray(Span<byte> data, bool[] value)
+    public static void SetBitFlagArray(Span<byte> data, ReadOnlySpan<bool> value)
     {
         for (int i = 0; i < value.Length; i++)
         {
@@ -168,6 +168,15 @@ public static class ArrayUtil
         arr1.CopyTo(result, 0);
         arr2.CopyTo(result, arr1.Length);
         arr3.CopyTo(result, arr1.Length + arr2.Length);
+        return result;
+    }
+
+    internal static T[] ConcatAll<T>(T[] arr1, ReadOnlySpan<T> arr2)
+    {
+        int len = arr1.Length + arr2.Length;
+        var result = new T[len];
+        arr1.CopyTo(result, 0);
+        arr2.CopyTo(result.AsSpan(arr1.Length));
         return result;
     }
 

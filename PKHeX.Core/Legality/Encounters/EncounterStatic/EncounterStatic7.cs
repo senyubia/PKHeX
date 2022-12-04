@@ -1,6 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-
 namespace PKHeX.Core;
 
 /// <summary>
@@ -10,7 +7,8 @@ namespace PKHeX.Core;
 public sealed record EncounterStatic7(GameVersion Version) : EncounterStatic(Version), IRelearn
 {
     public override int Generation => 7;
-    public IReadOnlyList<int> Relearn { get; init; } = Array.Empty<int>();
+    public override EntityContext Context => EntityContext.Gen7;
+    public Moveset Relearn { get; init; }
 
     public bool IsTotem => FormInfo.IsTotemForm(Species, Form);
     public bool IsTotemNoTransfer => Legal.Totem_NoTransfer.Contains(Species);
@@ -18,7 +16,7 @@ public sealed record EncounterStatic7(GameVersion Version) : EncounterStatic(Ver
 
     protected override bool IsMatchLocation(PKM pk)
     {
-        if (EggLocation == Locations.Daycare5 && Relearn.Count == 0 && pk.RelearnMove1 != 0) // Gift Eevee edge case
+        if (EggLocation == Locations.Daycare5 && !Relearn.HasMoves && pk.RelearnMove1 != 0) // Gift Eevee edge case
             return false;
         return base.IsMatchLocation(pk);
     }
@@ -60,7 +58,7 @@ public sealed record EncounterStatic7(GameVersion Version) : EncounterStatic(Ver
         pk.SetRandomEC();
     }
 
-    internal static EncounterStatic7 GetVC1(int species, byte metLevel)
+    internal static EncounterStatic7 GetVC1(ushort species, byte metLevel)
     {
         bool mew = species == (int)Core.Species.Mew;
         return new EncounterStatic7(GameVersion.RBY)
@@ -76,7 +74,7 @@ public sealed record EncounterStatic7(GameVersion Version) : EncounterStatic(Ver
         };
     }
 
-    internal static EncounterStatic7 GetVC2(int species, byte metLevel)
+    internal static EncounterStatic7 GetVC2(ushort species, byte metLevel)
     {
         bool mew = species == (int)Core.Species.Mew;
         bool fateful = mew || species == (int)Core.Species.Celebi;

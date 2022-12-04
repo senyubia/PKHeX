@@ -1,4 +1,4 @@
-﻿using static PKHeX.Core.Species;
+using static PKHeX.Core.Species;
 
 namespace PKHeX.Core;
 
@@ -26,22 +26,11 @@ public static partial class Legal
         240,241,242,243,244,245,246,247,248,249,250,
     };
 
-    internal static bool TransferSpeciesDefaultAbilityGen1(int species)
+    internal static bool TransferSpeciesDefaultAbilityGen1(ushort species)
     {
         System.Diagnostics.Debug.Assert((uint)species <= MaxSpeciesID_1);
         return species is (int)Gastly or (int)Haunter or (int)Gengar
             or (int)Koffing or (int)Weezing
             or (int)Mew;
     }
-
-    internal static readonly int[] TMHM_RBY =
-    {
-        005, 013, 014, 018, 025, 092, 032, 034, 036, 038,
-        061, 055, 058, 059, 063, 006, 066, 068, 069, 099,
-        072, 076, 082, 085, 087, 089, 090, 091, 094, 100,
-        102, 104, 115, 117, 118, 120, 121, 126, 129, 130,
-        135, 138, 143, 156, 086, 149, 153, 157, 161, 164,
-
-        015, 019, 057, 070, 148,
-    };
 }

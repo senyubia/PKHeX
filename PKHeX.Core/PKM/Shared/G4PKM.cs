@@ -2,24 +2,24 @@ using System;
 
 namespace PKHeX.Core;
 
+/// <summary> Generation 4 <see cref="PKM"/> format. </summary>
 public abstract class G4PKM : PKM,
-    IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetUnique3, IRibbonSetUnique4, IRibbonSetCommon3, IRibbonSetCommon4,
-    IContestStats, IContestStatsMutable, IGroundTile
+    IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetUnique3, IRibbonSetUnique4, IRibbonSetCommon3, IRibbonSetCommon4, IContestStats, IGroundTile
 {
     protected G4PKM(byte[] data) : base(data) { }
     protected G4PKM(int size) : base(size) { }
 
     // Maximums
-    public sealed override int MaxMoveID => Legal.MaxMoveID_4;
-    public sealed override int MaxSpeciesID => Legal.MaxSpeciesID_4;
+    public sealed override ushort MaxMoveID => Legal.MaxMoveID_4;
+    public sealed override ushort MaxSpeciesID => Legal.MaxSpeciesID_4;
     public sealed override int MaxAbilityID => Legal.MaxAbilityID_4;
     public sealed override int MaxItemID => Legal.MaxItemID_4_HGSS;
     public sealed override int MaxBallID => Legal.MaxBallID_4;
     public sealed override int MaxGameID => Legal.MaxGameID_4;
     public sealed override int MaxIV => 31;
     public sealed override int MaxEV => 255;
-    public sealed override int OTLength => 7;
-    public sealed override int NickLength => 10;
+    public sealed override int MaxStringLengthOT => 7;
+    public sealed override int MaxStringLengthNickname => 10;
 
     public sealed override int PSV => (int)(((PID >> 16) ^ (PID & 0xFFFF)) >> 3);
     public sealed override int TSV => (TID ^ SID) >> 3;
@@ -291,6 +291,15 @@ public abstract class G4PKM : PKM,
             return true;
         }
         return false;
+    }
+
+    // Enforce DP content only (no PtHGSS)
+    protected void StripPtHGSSContent(PKM pk)
+    {
+        if (Form != 0 && !PersonalTable.DP[Species].HasForms && Species != 201)
+            pk.Form = 0;
+        if (HeldItem > Legal.MaxItemID_4_DP)
+            pk.HeldItem = 0;
     }
 
     protected T ConvertTo<T>() where T : G4PKM, new()

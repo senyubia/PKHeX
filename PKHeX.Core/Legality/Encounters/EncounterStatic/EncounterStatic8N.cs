@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+using System;
 using static PKHeX.Core.Encounters8Nest;
 
 namespace PKHeX.Core;
@@ -14,7 +13,7 @@ public sealed record EncounterStatic8N : EncounterStatic8Nest<EncounterStatic8N>
     private readonly uint MaxRank;
     private readonly byte NestID;
 
-    private IReadOnlyList<byte> NestLocations => Encounters8Nest.NestLocations[NestID];
+    private byte[] NestLocations => Encounters8Nest.NestLocations[NestID];
 
     public override byte Level { get => LevelMin; init { } }
     public override byte LevelMin => LevelCaps[MinRank * 2];
@@ -28,6 +27,15 @@ public sealed record EncounterStatic8N : EncounterStatic8Nest<EncounterStatic8N>
         DynamaxLevel = (byte)(MinRank + 1u);
         FlawlessIVCount = val;
     }
+
+    public static EncounterStatic8N Read(ReadOnlySpan<byte> data, GameVersion game) => new(data[6], data[7], data[8], data[9], game)
+    {
+        Species = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(data),
+        Form = data[2],
+        Gender = (sbyte)data[3],
+        Ability = (AbilityPermission)data[4],
+        CanGigantamax = data[5] != 0,
+    };
 
     private static readonly byte[] LevelCaps =
     {
@@ -48,10 +56,14 @@ public sealed record EncounterStatic8N : EncounterStatic8Nest<EncounterStatic8N>
         if (rank > MaxRank)
             return false;
 
-        if (rank <= 1)
+        if (rank <= 1 && met <= byte.MaxValue)
         {
-            if (InaccessibleRank12Nests.TryGetValue(pk.Met_Location, out var nests) && nests.Contains(NestID))
-                return false;
+            if (InaccessibleRank12Nests.TryGetValue((byte)met, out var nests))
+            {
+                var nest = Array.IndexOf(nests, NestID);
+                if (nest >= 0)
+                    return false;
+            }
         }
 
         if (rank < MinRank) // down-leveled
@@ -84,7 +96,11 @@ public sealed record EncounterStatic8N : EncounterStatic8Nest<EncounterStatic8N>
     protected override bool IsMatchLocation(PKM pk)
     {
         var loc = pk.Met_Location;
-        return loc == SharedNest || (loc <= 255 && NestLocations.Contains((byte)loc));
+        if (loc == SharedNest)
+            return true;
+        if (loc > byte.MaxValue)
+            return false;
+        return Array.IndexOf(NestLocations, (byte)loc) >= 0;
     }
 
     public override bool IsMatchExact(PKM pk, EvoCriteria evo)

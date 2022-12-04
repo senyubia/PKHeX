@@ -1,4 +1,5 @@
 using System;
+using static PKHeX.Core.Species;
 
 namespace PKHeX.Core;
 
@@ -19,7 +20,7 @@ public sealed record EncounterSlot8GO : EncounterSlotGO, IFixedOTFriendship
     /// </remarks>
     public PogoImportFormat OriginFormat { get; }
 
-    public EncounterSlot8GO(EncounterArea8g area, int species, int form, int start, int end, Shiny shiny, Gender gender, PogoType type, PogoImportFormat originFormat)
+    public EncounterSlot8GO(EncounterArea8g area, ushort species, byte form, int start, int end, Shiny shiny, Gender gender, PogoType type, PogoImportFormat originFormat)
         : base(area, species, form, start, end, shiny, gender, type)
     {
         OriginFormat = originFormat;
@@ -28,10 +29,10 @@ public sealed record EncounterSlot8GO : EncounterSlotGO, IFixedOTFriendship
     /// <summary>
     /// Checks if the <seealso cref="Ball"/> is compatible with the <seealso cref="PogoType"/>.
     /// </summary>
-    public bool IsBallValid(Ball ball, int currentSpecies)
+    public bool IsBallValid(Ball ball, ushort currentSpecies)
     {
         // GO does not natively produce Shedinja when evolving Nincada, and thus must be evolved in future games.
-        if (currentSpecies == (int)Core.Species.Shedinja && currentSpecies != Species)
+        if (currentSpecies == (int)Shedinja && currentSpecies != Species)
             return ball == Ball.Poke;
         return Type.IsBallValid(ball);
     }
@@ -42,15 +43,17 @@ public sealed record EncounterSlot8GO : EncounterSlotGO, IFixedOTFriendship
         PogoImportFormat.PB7 => new PB7(),
         PogoImportFormat.PK8 => new PK8(),
         PogoImportFormat.PA8 => new PA8(),
+        PogoImportFormat.PK9 => new PK9(),
         _ => throw new ArgumentOutOfRangeException(nameof(OriginFormat)),
     };
 
-    private PersonalInfo GetPersonal() => OriginFormat switch
+    private IPersonalInfo GetPersonal() => OriginFormat switch
     {
         PogoImportFormat.PK7 => PersonalTable.USUM.GetFormEntry(Species, Form),
         PogoImportFormat.PB7 => PersonalTable.GG.GetFormEntry(Species, Form),
         PogoImportFormat.PK8 => PersonalTable.SWSH.GetFormEntry(Species, Form),
         PogoImportFormat.PA8 => PersonalTable.LA.GetFormEntry(Species, Form),
+        PogoImportFormat.PK9 => PersonalTable.SV.GetFormEntry(Species, Form),
         _ => throw new ArgumentOutOfRangeException(nameof(OriginFormat)),
     };
 
@@ -60,6 +63,20 @@ public sealed record EncounterSlot8GO : EncounterSlotGO, IFixedOTFriendship
         PogoImportFormat.PB7 => GameVersion.GG,
         PogoImportFormat.PK8 => GameVersion.SWSH,
         PogoImportFormat.PA8 => GameVersion.PLA,
+        PogoImportFormat.PK9 => GameVersion.SV,
+        _ => throw new ArgumentOutOfRangeException(nameof(OriginFormat)),
+    };
+
+    public override EntityContext Context => OriginFormat switch
+    {
+        PogoImportFormat.PK7 =>
+              PersonalTable.BDSP.IsPresentInGame(Species, Form) ? EntityContext.Gen8b
+            : PersonalTable.LA.IsPresentInGame(Species, Form) ? EntityContext.Gen8a
+            : EntityContext.Gen8, // don't throw an exception, just give them a context.
+        PogoImportFormat.PB7 => EntityContext.Gen7b,
+        PogoImportFormat.PK8 => EntityContext.Gen8,
+        PogoImportFormat.PA8 => EntityContext.Gen8a,
+        PogoImportFormat.PK9 => EntityContext.Gen9,
         _ => throw new ArgumentOutOfRangeException(nameof(OriginFormat)),
     };
 
@@ -86,7 +103,7 @@ public sealed record EncounterSlot8GO : EncounterSlotGO, IFixedOTFriendship
             var pa8 = (PA8)pk;
             pa8.ResetHeight();
             pa8.ResetWeight();
-            pa8.HeightScalarCopy = pa8.HeightScalar;
+            pa8.Scale = pa8.HeightScalar;
         }
 
         pk.OT_Friendship = OT_Friendship;
@@ -108,9 +125,8 @@ public sealed record EncounterSlot8GO : EncounterSlotGO, IFixedOTFriendship
         pk.Gender = gender;
 
         pk.AbilityNumber = 1 << ability;
-        var abilities = pi.Abilities;
-        if ((uint)ability < abilities.Count)
-            pk.Ability = abilities[ability];
+        if ((uint)ability < pi.AbilityCount)
+            pk.Ability = pi.GetAbilityAtIndex(ability);
 
         pk.SetRandomIVsGO();
         base.SetPINGA(pk, criteria);
@@ -118,10 +134,13 @@ public sealed record EncounterSlot8GO : EncounterSlotGO, IFixedOTFriendship
 
     protected override void SetEncounterMoves(PKM pk, GameVersion version, int level)
     {
-        var moves = MoveLevelUp.GetEncounterMoves(pk, level, OriginGroup);
+        Span<ushort> moves = stackalloc ushort[4];
+        GetInitialMoves(level, moves);
         pk.SetMoves(moves);
         pk.SetMaximumPPCurrent(moves);
     }
+
+    public void GetInitialMoves(int level, Span<ushort> moves) => MoveLevelUp.GetEncounterMoves(moves, Species, Form, level, OriginGroup);
 
     public override EncounterMatchRating GetMatchRating(PKM pk)
     {
@@ -132,9 +151,9 @@ public sealed record EncounterSlot8GO : EncounterSlotGO, IFixedOTFriendship
 
     public byte OT_Friendship => Species switch
     {
-        (int)Core.Species.Timburr  when Form == 0 => 70,
-        (int)Core.Species.Stunfisk when Form == 0 => 70,
-        (int)Core.Species.Hoopa    when Form == 1 => 50,
+        (int)Timburr  when Form == 0 => 70,
+        (int)Stunfisk when Form == 0 => 70,
+        (int)Hoopa    when Form == 1 => 50,
         _ => GetHOMEFriendship(),
     };
 
@@ -153,36 +172,48 @@ public sealed record EncounterSlot8GO : EncounterSlotGO, IFixedOTFriendship
             return true;
         if (!GetIVsAboveMinimum(pk))
             return true;
-        if (!GetIVsBelowMaximum(pk))
-            return true;
 
         // Eevee & Glaceon have different base friendships. Make sure if it is invalid that we yield the other encounter before.
         if (pk.OT_Friendship != OT_Friendship)
             return true;
 
-        return Species switch
-        {
-            (int)Core.Species.Yamask when pk.Species != Species && Form == 1 => pk is IFormArgument { FormArgument: 0 },
-            (int)Core.Species.Milcery when pk.Species != Species => pk is IFormArgument { FormArgument: 0 },
-            (int)Core.Species.Qwilfish when pk.Species != Species && Form == 1 => pk is IFormArgument { FormArgument: 0 },
-            (int)Core.Species.Basculin when pk.Species != Species && Form == 2 => pk is IFormArgument { FormArgument: 0 },
-            (int)Core.Species.Stantler when pk.Species != Species => pk is IFormArgument { FormArgument: 0 },
-
-            (int)Core.Species.Runerigus => pk is IFormArgument { FormArgument: not 0 },
-            (int)Core.Species.Alcremie => pk is IFormArgument { FormArgument: not 0 },
-            (int)Core.Species.Wyrdeer => pk is IFormArgument { FormArgument: not 0 },
-            (int)Core.Species.Basculegion => pk is IFormArgument { FormArgument: not 0 },
-            (int)Core.Species.Overqwil => pk is IFormArgument { FormArgument: not 0 },
-
-            _ => false,
-        };
+        return IsFormArgIncorrect(pk);
     }
+
+    private bool IsFormArgIncorrect(ISpeciesForm pk) => Species switch
+    {
+        // Evolved without Form Argument changing from default
+        (int)Yamask     when pk.Species != Species && Form == 1 => pk is IFormArgument { FormArgument: 0 },
+        (int)Milcery    when pk.Species != Species              => pk is IFormArgument { FormArgument: 0 },
+        (int)Stantler   when pk.Species != Species              => pk is IFormArgument { FormArgument: 0 },
+        (int)Qwilfish   when pk.Species != Species && Form == 1 => pk is IFormArgument { FormArgument: 0 },
+        (int)Basculin   when pk.Species != Species && Form == 2 => pk is IFormArgument { FormArgument: 0 },
+        (int)Primeape   when pk.Species != Species              => pk is IFormArgument { FormArgument: 0 },
+        (int)Bisharp    when pk.Species != Species              => pk is IFormArgument { FormArgument: 0 },
+
+        // Not evolved, but Form Argument changed from default
+        (int)Runerigus   => pk is IFormArgument { FormArgument: not 0 },
+        (int)Alcremie    => pk is IFormArgument { FormArgument: not 0 },
+        (int)Wyrdeer     => pk is IFormArgument { FormArgument: not 0 },
+        (int)Overqwil    => pk is IFormArgument { FormArgument: not 0 },
+        (int)Basculegion => pk is IFormArgument { FormArgument: not 0 },
+        (int)Gholdengo   => pk is IFormArgument { FormArgument: not 0 },
+        (int)Kingambit   => pk is IFormArgument { FormArgument: not 0 },
+        (int)Annihilape  => pk is IFormArgument { FormArgument: not 0 },
+
+        // No Form Argument relevant to check
+        _ => false,
+    };
 }
 
+/// <summary>
+/// Enumerates the possible ways Pokémon GO data can be initialized with when imported to HOME.
+/// </summary>
 public enum PogoImportFormat : byte
 {
     PK7 = 0,
     PB7 = 1,
     PK8 = 2,
     PA8 = 3,
+    PK9 = 4,
 }

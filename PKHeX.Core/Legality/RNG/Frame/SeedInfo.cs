@@ -19,7 +19,7 @@ public readonly record struct SeedInfo(uint Seed, bool Charm3 = false)
         yield return new SeedInfo(seed);
 
         var s1 = seed;
-        var s2 = RNG.LCRNG.Prev(s1);
+        var s2 = LCRNG.Prev(s1);
         bool charm3 = false;
         while (true)
         {
@@ -38,8 +38,8 @@ public readonly record struct SeedInfo(uint Seed, bool Charm3 = false)
                     break;
             }
 
-            s1 = RNG.LCRNG.Prev(s2);
-            s2 = RNG.LCRNG.Prev(s1);
+            s1 = LCRNG.Prev(s2);
+            s2 = LCRNG.Prev(s1);
 
             yield return new SeedInfo(s1, charm3);
         }
@@ -55,9 +55,11 @@ public readonly record struct SeedInfo(uint Seed, bool Charm3 = false)
         // We cannot rely on a PID-IV origin seed. Since IVs are 2^30, they are not strong enough to assume a single seed was the source.
         // We must reverse the IVs to find all seeds that could generate this.
         // ESV,Proc,Nature,IV1,IV2; these do not do the nature loop for Method J/K so each seed originates a single seed frame.
-        var seeds = MethodFinder.GetCuteCharmSeeds(pk);
-        foreach (var seed in seeds)
-            yield return new SeedInfo(seed);
+
+        var seeds = new uint[LCRNG.MaxCountSeedsIV];
+        int ctr = LCRNGReversal.GetSeedsIVs(seeds, (uint)pk.IV_HP, (uint)pk.IV_ATK, (uint)pk.IV_DEF, (uint)pk.IV_SPA, (uint)pk.IV_SPD, (uint)pk.IV_SPE);
+        for (int i = 0; i < ctr; i++)
+            yield return new SeedInfo(seeds[i]);
     }
 
     /// <summary>
@@ -67,13 +69,13 @@ public readonly record struct SeedInfo(uint Seed, bool Charm3 = false)
     /// <param name="info">Verification information</param>
     /// <param name="form">Unown Form lock value</param>
     /// <returns>Seed information data, which needs to be unrolled once for the nature call.</returns>
-    public static IEnumerable<SeedInfo> GetSeedsUntilUnownForm(PIDIV pidiv, FrameGenerator info, int form)
+    public static IEnumerable<SeedInfo> GetSeedsUntilUnownForm(PIDIV pidiv, FrameGenerator info, byte form)
     {
         var seed = pidiv.OriginSeed;
         yield return new SeedInfo(seed);
 
         var s1 = seed;
-        var s2 = RNG.LCRNG.Prev(s1);
+        var s2 = LCRNG.Prev(s1);
         while (true)
         {
             var a = s2 >> 16;
@@ -91,8 +93,8 @@ public readonly record struct SeedInfo(uint Seed, bool Charm3 = false)
                 }
             }
 
-            s1 = RNG.LCRNG.Prev(s2);
-            s2 = RNG.LCRNG.Prev(s1);
+            s1 = LCRNG.Prev(s2);
+            s2 = LCRNG.Prev(s1);
 
             yield return new SeedInfo(s1);
         }

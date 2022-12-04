@@ -1,6 +1,12 @@
-﻿namespace PKHeX.Core;
+namespace PKHeX.Core;
 
-public interface INature
+/// <summary>
+/// Exposes details about the entity's Nature
+/// </summary>
+public interface INature : INatureReadOnly
 {
-    int Nature { get; set; }
+    /// <summary>
+    /// Nature the entity has.
+    /// </summary>
+    new int Nature { get; set; }
 }

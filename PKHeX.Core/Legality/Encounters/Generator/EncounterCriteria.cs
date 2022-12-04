@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using static PKHeX.Core.AbilityPermission;
 
 namespace PKHeX.Core;
@@ -42,6 +41,8 @@ public sealed record EncounterCriteria
     /// </summary>
     public bool ForceMinLevelRange { get; set; }
 
+    public sbyte TeraType { get; init; } = -1;
+
     // unused
     public int HPType { get; init; } = -1;
 
@@ -73,10 +74,10 @@ public sealed record EncounterCriteria
         return true;
     }
 
-    /// <inheritdoc cref="GetCriteria(IBattleTemplate, PersonalInfo)"/>
+    /// <inheritdoc cref="GetCriteria(IBattleTemplate, IPersonalInfo)"/>
     /// <param name="s">Template data (end result).</param>
     /// <param name="t">Personal table the end result will exist with.</param>
-    public static EncounterCriteria GetCriteria(IBattleTemplate s, PersonalTable t)
+    public static EncounterCriteria GetCriteria(IBattleTemplate s, IPersonalTable t)
     {
         var pi = t.GetFormEntry(s.Species, s.Form);
         return GetCriteria(s, pi);
@@ -88,7 +89,7 @@ public sealed record EncounterCriteria
     /// <param name="s">Template data (end result).</param>
     /// <param name="pi">Personal info the end result will exist with.</param>
     /// <returns>Initialized criteria data to be passed to generators.</returns>
-    public static EncounterCriteria GetCriteria(IBattleTemplate s, PersonalInfo pi) => new()
+    public static EncounterCriteria GetCriteria(IBattleTemplate s, IPersonalInfo pi) => new()
     {
         Gender = s.Gender,
         IV_HP = s.IVs[0],
@@ -104,24 +105,24 @@ public sealed record EncounterCriteria
         Shiny = s.Shiny ? Shiny.Always : Shiny.Never,
     };
 
-    private static AbilityPermission GetAbilityNumber(int ability, PersonalInfo pi)
+    private static AbilityPermission GetAbilityNumber(int ability, IPersonalAbility pi)
     {
-        var abilities = pi.Abilities;
-        if (abilities.Count < 2)
-            return 0;
-        var dual = GetAbilityValueDual(ability, abilities);
-        if (abilities.Count == 2) // prior to gen5
+        var count = pi.AbilityCount;
+        if (count < 2 || pi is not IPersonalAbility12 a)
+            return Any12;
+        var dual = GetAbilityValueDual(ability, a);
+        if (count == 2 || pi is not IPersonalAbility12H h) // prior to gen5
             return dual;
-        if (abilities[2] == ability)
-            return dual == 0 ? Any12H : OnlyHidden;
+        if (ability == h.AbilityH)
+            return dual == Any12 ? Any12H : OnlyHidden;
         return dual;
     }
 
-    private static AbilityPermission GetAbilityValueDual(int ability, IReadOnlyList<int> abilities)
+    private static AbilityPermission GetAbilityValueDual(int ability, IPersonalAbility12 a)
     {
-        if (ability == abilities[0])
-            return ability != abilities[1] ? OnlyFirst : Any12;
-        return ability == abilities[1] ? OnlySecond : Any12;
+        if (ability == a.Ability1)
+            return ability != a.Ability2 ? OnlyFirst : Any12;
+        return ability == a.Ability2 ? OnlySecond : Any12;
     }
 
     /// <summary>
@@ -139,13 +140,15 @@ public sealed record EncounterCriteria
     /// <summary>
     /// Gets a random gender to generate, based off an encounter's <see cref="gender"/>.
     /// </summary>
-    public int GetGender(int gender, PersonalInfo pkPersonalInfo)
+    public int GetGender(int gender, IGenderDetail pkPersonalInfo)
     {
         if ((uint)gender < 3)
             return gender;
         if (!pkPersonalInfo.IsDualGender)
-            return pkPersonalInfo.FixedGender;
-        if (Gender >= 0)
+            return pkPersonalInfo.FixedGender();
+        if (pkPersonalInfo.Genderless)
+            return 2;
+        if (Gender is 0 or 1)
             return Gender;
         return pkPersonalInfo.RandomGender();
     }

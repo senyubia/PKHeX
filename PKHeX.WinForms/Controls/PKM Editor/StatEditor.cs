@@ -1,9 +1,10 @@
 using System;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
 using PKHeX.Core;
 using PKHeX.Drawing;
+using PKHeX.Drawing.Misc;
+using PKHeX.Drawing.PokeSprite;
 
 namespace PKHeX.WinForms.Controls;
 
@@ -309,7 +310,7 @@ public partial class StatEditor : UserControl
         int hpower = WinFormsUtil.GetIndex(CB_HPType);
         if (Main.Settings.EntityEditor.HiddenPowerOnChangeMaxPower)
             ivs.Fill(Entity.MaxIV);
-        HiddenPower.SetIVs(hpower, ivs, Entity.Format);
+        HiddenPower.SetIVs(hpower, ivs, Entity.Context);
         LoadIVs(ivs);
     }
 
@@ -390,17 +391,26 @@ public partial class StatEditor : UserControl
             LoadBST(pi);
             LoadPartyStats(Entity);
         }
+        if (Entity is ITeraType)
+        {
+            var pi = Entity.PersonalInfo;
+            PB_TeraType1.SetType(pi.Type1);
+            PB_TeraType2.SetType(pi.Type2);
+        }
     }
 
-    private void LoadBST(PersonalInfo pi)
+    private void LoadBST(IBaseStat pi)
     {
-        var stats = pi.Stats;
-        for (int i = 0; i < stats.Count; i++)
+        int bst = 0;
+        for (int index = 0; index < 6; index++)
         {
-            MT_Base[i].Text = stats[i].ToString("000");
-            MT_Base[i].BackColor = ColorUtil.ColorBaseStat(stats[i]);
+            var value = pi.GetBaseStatValue(index);
+            var s = MT_Base[index];
+            s.Text = value.ToString("000");
+            s.BackColor = ColorUtil.ColorBaseStat(value);
+            bst += value;
         }
-        var bst = pi.Stats.Sum();
+
         TB_BST.Text = bst.ToString("000");
         TB_BST.BackColor = ColorUtil.ColorBaseStatTotal(bst);
     }
@@ -584,8 +594,9 @@ public partial class StatEditor : UserControl
         FLP_StatsTotal.Visible = gen >= 3;
         FLP_Characteristic.Visible = gen >= 3;
         FLP_HPType.Visible = gen <= 7 || pk is PB8;
+        FLP_TeraType.Visible = FLP_TeraInner.Visible = pk is ITeraType;
         Label_HiddenPowerPower.Visible = gen <= 5;
-        FLP_DynamaxLevel.Visible = gen >= 8;
+        FLP_DynamaxLevel.Visible = gen == 8;
         FLP_AlphaNoble.Visible = pk is PA8;
 
         switch (gen)
@@ -638,11 +649,42 @@ public partial class StatEditor : UserControl
         }
     }
 
+    private const string TeraOverrideNone = "---";
+    private const byte TeraOverrideNoneValue = TeraTypeUtil.OverrideNone;
+
+    private void L_TeraTypeOriginal_Click(object sender, EventArgs e)
+    {
+        var pi = Entity.PersonalInfo;
+        var current = WinFormsUtil.GetIndex(CB_TeraTypeOriginal);
+        var update = pi.Type1 == current ? pi.Type2 : pi.Type1;
+        SetOriginalTeraType(update);
+    }
+
+    private void SetOriginalTeraType(byte value)
+    {
+        CB_TeraTypeOriginal.SelectedValue = (int)value;
+        CB_TeraTypeOverride.SelectedValue = (int)TeraOverrideNoneValue;
+    }
+
+    private void PB_TeraType1_Click(object sender, EventArgs e) => SetOriginalTeraType(Entity.PersonalInfo.Type1);
+    private void PB_TeraType2_Click(object sender, EventArgs e) => SetOriginalTeraType(Entity.PersonalInfo.Type2);
+
     public void InitializeDataSources()
     {
         ChangingFields = true;
+
         CB_HPType.InitializeBinding();
-        CB_HPType.DataSource = Util.GetCBList(GameInfo.Strings.types.AsSpan(1, 16));
+        CB_TeraTypeOriginal.InitializeBinding();
+        CB_TeraTypeOverride.InitializeBinding();
+
+        var types = GameInfo.Strings.types;
+        CB_HPType.DataSource = Util.GetCBList(types.AsSpan(1, 16));
+
+        var tera = Util.GetCBList(types);
+        tera.Insert(0, new(TeraOverrideNone, TeraOverrideNoneValue));
+        CB_TeraTypeOriginal.DataSource = new BindingSource(tera, null);
+        CB_TeraTypeOverride.DataSource = new BindingSource(tera, null);
+
         ChangingFields = false;
     }
 
@@ -656,5 +698,46 @@ public partial class StatEditor : UserControl
     {
         if (!ChangingFields)
             ((PKMEditor) MainEditor).UpdateSprite();
+    }
+
+    private void L_TeraTypeOverride_Click(object sender, EventArgs e) => CB_TeraTypeOverride.SelectedValue = (int)TeraOverrideNoneValue;
+
+    private void ChangeTeraType(object sender, EventArgs e)
+    {
+        if (ChangingFields && sender == CB_TeraTypeOriginal)
+            return;
+
+        var original = (byte)WinFormsUtil.GetIndex(CB_TeraTypeOriginal);
+        var update = (byte)WinFormsUtil.GetIndex(CB_TeraTypeOverride);
+        if (!ChangingFields && Entity is ITeraType t) // Store back
+        {
+            if (sender == CB_TeraTypeOriginal)
+                t.TeraTypeOriginal = (MoveType)original;
+            else if (sender == CB_TeraTypeOverride)
+                t.TeraTypeOverride = (MoveType)update;
+        }
+
+        var type = update;
+        if (type == TeraOverrideNoneValue)
+            type = original;
+        PB_TeraType.Image = TypeSpriteUtil.GetTypeSpriteGem(type);
+        if (!ChangingFields)
+            ((PKMEditor)MainEditor).UpdateSprite();
+    }
+}
+
+public sealed class TypePictureBox : PictureBox
+{
+    private byte Type;
+
+    public void SetType(byte type) => BackColor = TypeColor.GetTypeSpriteColor(Type = type);
+    private readonly ToolTip Tip = new() { InitialDelay = 500, ReshowDelay = 500, ShowAlways = true };
+
+    // Show a tooltip when hovered.
+    protected override void OnMouseHover(EventArgs e)
+    {
+        base.OnMouseHover(e);
+        var name = GameInfo.Strings.types[Type];
+        Tip.SetToolTip(this, name);
     }
 }

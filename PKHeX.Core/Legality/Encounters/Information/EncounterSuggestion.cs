@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+using System;
 
 using static PKHeX.Core.GameVersion;
 
@@ -28,8 +27,8 @@ public static class EncounterSuggestion
         if (s is null)
             return GetSuggestedEncounter(pk, w, loc);
 
-        bool isDefinitelySlot = chain.Any(z => z.Species == w.Species && z.Form == w.Form);
-        bool isDefinitelyStatic = chain.Any(z => z.Species == s.Species && z.Form == s.Form);
+        bool isDefinitelySlot = Array.Exists(chain, z => z.Species == w.Species && z.Form == w.Form);
+        bool isDefinitelyStatic = Array.Exists(chain, z => z.Species == s.Species && z.Form == s.Form);
         IEncounterable obj = (isDefinitelySlot || !isDefinitelyStatic) ? w : s;
         return GetSuggestedEncounter(pk, obj, loc);
     }
@@ -61,6 +60,7 @@ public static class EncounterSuggestion
         4 => traded ? Locations.LinkTrade4 : Locations.Daycare4,
         5 => traded ? Locations.LinkTrade5 : Locations.Daycare5,
         8 when BDSP.Contains(version)=> traded ? Locations.LinkTrade6NPC : Locations.Daycare8b,
+        9 => Locations.Picnic9,
         _ => traded ? Locations.LinkTrade6 : Locations.Daycare5,
     };
 
@@ -104,14 +104,25 @@ public static class EncounterSuggestion
 
         var table = EvolutionTree.GetEvolutionTree(pk.Context);
         int count = 1;
-        for (byte i = 100; i >= startLevel; i--)
+        byte i = 100;
+        while (true)
         {
-            var evos = table.GetValidPreEvolutions(pk, maxLevel: i, minLevel: startLevel, skipChecks: true);
+            var evos = table.GetValidPreEvolutions(pk, levelMax: i, skipChecks: true, levelMin: startLevel);
             if (evos.Length < count) // lost an evolution, prior level was minimum current level
-                return evos.Max(evo => evo.LevelMax) + 1;
+                return GetMaxLevelMax(evos) + 1;
             count = evos.Length;
+            if (i == startLevel)
+                return startLevel;
+            --i;
         }
-        return startLevel;
+    }
+
+    private static int GetMaxLevelMax(EvoCriteria[] evos)
+    {
+        int max = 0;
+        foreach (var evo in evos)
+            max = Math.Max(evo.LevelMax, max);
+        return max;
     }
 
     public static bool IterateMinimumCurrentLevel(PKM pk, bool isLegal, int max = 100)
@@ -163,7 +174,8 @@ public static class EncounterSuggestion
             var la = new LegalityAnalysis(clone);
             if (la.Valid)
                 return i;
-            if (la.Info.Moves.All(z => z.Valid))
+            var moves = la.Info.Moves;
+            if (MoveResult.AllValid(moves))
                 minMove = i;
         }
         return Math.Max(minMove, minLevel);

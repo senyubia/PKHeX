@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using static System.Buffers.Binary.BinaryPrimitives;
@@ -80,8 +80,8 @@ public abstract class SAV7 : SAV_BEEF, ITrainerStatRecord, ISaveBlock7Main, IReg
     public int EventWorkCount => 1000;
     private int EventWork => AllBlocks[05].Offset;
     private int EventFlag => EventWork + (EventWorkCount * 2); // After Event Const (u16)*n
-    public override int OTLength => 12;
-    public override int NickLength => 12;
+    public override int MaxStringLengthOT => 12;
+    public override int MaxStringLengthNickname => 12;
 
     public override int MaxBallID => Legal.MaxBallID_7; // 26
     public override int MaxGameID => Legal.MaxGameID_7;
@@ -216,8 +216,8 @@ public abstract class SAV7 : SAV_BEEF, ITrainerStatRecord, ISaveBlock7Main, IReg
     }
 
     protected override void SetDex(PKM pk) => Zukan.SetDex(pk);
-    public override bool GetCaught(int species) => Zukan.GetCaught(species);
-    public override bool GetSeen(int species) => Zukan.GetSeen(species);
+    public override bool GetCaught(ushort species) => Zukan.GetCaught(species);
+    public override bool GetSeen(ushort species) => Zukan.GetSeen(species);
 
     public override int PartyCount
     {

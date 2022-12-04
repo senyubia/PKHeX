@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using static System.Buffers.Binary.BinaryPrimitives;
 
@@ -18,7 +18,7 @@ public sealed class PK8 : G8PKM
         0x9C, 0x9D, 0x9E, 0x9F, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7,
 
         0xC5,
-        0xCE, 0xCF, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9, 0xDA, 0xDB,
+        0xCE, 0xCF, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9, 0xDA, 0xDB, // Pokejob
         0xE0, 0xE1, // Old Console Region / Region
         0xE9, 0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF, 0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7,
         0x115, 0x11F, // Alignment
@@ -100,8 +100,8 @@ public sealed class PK8 : G8PKM
     }
 
     // Maximums
-    public override int MaxMoveID => Legal.MaxMoveID_8;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_8;
+    public override ushort MaxMoveID => Legal.MaxMoveID_8;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_8;
     public override int MaxAbilityID => Legal.MaxAbilityID_8;
     public override int MaxItemID => Legal.MaxItemID_8;
     public override int MaxBallID => Legal.MaxBallID_8;
@@ -149,12 +149,13 @@ public sealed class PK8 : G8PKM
 
         var index = table.GetFormIndex(Species, Form);
         var learn = learnsets[index];
-        Span<int> moves = stackalloc int[4];
+        Span<ushort> moves = stackalloc ushort[4];
         learn.SetEncounterMoves(CurrentLevel, moves);
         SetMoves(moves);
         this.SetMaximumPPCurrent(moves);
     }
 
+    public bool IsSideTransfer => Met_Location is Locations.HOME_SHSP or Locations.HOME_SWBD or Locations.HOME_SWLA;
     public override bool BDSP => Met_Location is Locations.HOME_SWBD or Locations.HOME_SHSP;
     public override bool LA => Met_Location is Locations.HOME_SWLA;
     public override bool HasOriginalMetLocation => base.HasOriginalMetLocation && !(BDSP || LA);
@@ -190,5 +191,11 @@ public sealed class PK8 : G8PKM
 
         if (Ball > (int)Core.Ball.Beast)
             Ball = (int)Core.Ball.Poke;
+    }
+
+    public PK9 ConvertToPK9()
+    {
+        // Todo: Transfer to PK9
+        return new PK9();
     }
 }

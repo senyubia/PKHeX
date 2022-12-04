@@ -71,13 +71,13 @@ public sealed class PK3 : G3PKM, ISanityChecksum
     #region Block A
     public override ushort SpeciesID3 { get => ReadUInt16LittleEndian(Data.AsSpan(0x20)); set => WriteUInt16LittleEndian(Data.AsSpan(0x20), value); } // raw access
 
-    public override int Species
+    public override ushort Species
     {
         get => SpeciesConverter.GetG4Species(SpeciesID3);
         set
         {
-            SpeciesID3 = (ushort)SpeciesConverter.GetG3Species(value);
-            FlagHasSpecies = Species > 0;
+            var s3 = SpeciesConverter.GetG3Species(value);
+            FlagHasSpecies = (SpeciesID3 = s3) != 0;
         }
     }
 
@@ -95,10 +95,10 @@ public sealed class PK3 : G3PKM, ISanityChecksum
     #endregion
 
     #region Block B
-    public override int Move1 { get => ReadUInt16LittleEndian(Data.AsSpan(0x2C)); set => WriteUInt16LittleEndian(Data.AsSpan(0x2C), (ushort)value); }
-    public override int Move2 { get => ReadUInt16LittleEndian(Data.AsSpan(0x2E)); set => WriteUInt16LittleEndian(Data.AsSpan(0x2E), (ushort)value); }
-    public override int Move3 { get => ReadUInt16LittleEndian(Data.AsSpan(0x30)); set => WriteUInt16LittleEndian(Data.AsSpan(0x30), (ushort)value); }
-    public override int Move4 { get => ReadUInt16LittleEndian(Data.AsSpan(0x32)); set => WriteUInt16LittleEndian(Data.AsSpan(0x32), (ushort)value); }
+    public override ushort Move1 { get => ReadUInt16LittleEndian(Data.AsSpan(0x2C)); set => WriteUInt16LittleEndian(Data.AsSpan(0x2C), value); }
+    public override ushort Move2 { get => ReadUInt16LittleEndian(Data.AsSpan(0x2E)); set => WriteUInt16LittleEndian(Data.AsSpan(0x2E), value); }
+    public override ushort Move3 { get => ReadUInt16LittleEndian(Data.AsSpan(0x30)); set => WriteUInt16LittleEndian(Data.AsSpan(0x30), value); }
+    public override ushort Move4 { get => ReadUInt16LittleEndian(Data.AsSpan(0x32)); set => WriteUInt16LittleEndian(Data.AsSpan(0x32), value); }
     public override int Move1_PP { get => Data[0x34]; set => Data[0x34] = (byte)value; }
     public override int Move2_PP { get => Data[0x35]; set => Data[0x35] = (byte)value; }
     public override int Move3_PP { get => Data[0x36]; set => Data[0x36] = (byte)value; }
@@ -158,11 +158,11 @@ public sealed class PK3 : G3PKM, ISanityChecksum
     public override bool AbilityBit { get => IV32 >> 31 == 1; set => IV32 = (IV32 & 0x7FFFFFFF) | (value ? 1u << 31 : 0u); }
 
     private uint RIB0 { get => ReadUInt32LittleEndian(Data.AsSpan(0x4C)); set => WriteUInt32LittleEndian(Data.AsSpan(0x4C), value); }
-    public override int RibbonCountG3Cool        { get => (int)(RIB0 >> 00) & 7; set => RIB0 = ((RIB0 & ~(7u << 00)) | ((uint)(value & 7) << 00)); }
-    public override int RibbonCountG3Beauty      { get => (int)(RIB0 >> 03) & 7; set => RIB0 = ((RIB0 & ~(7u << 03)) | ((uint)(value & 7) << 03)); }
-    public override int RibbonCountG3Cute        { get => (int)(RIB0 >> 06) & 7; set => RIB0 = ((RIB0 & ~(7u << 06)) | ((uint)(value & 7) << 06)); }
-    public override int RibbonCountG3Smart       { get => (int)(RIB0 >> 09) & 7; set => RIB0 = ((RIB0 & ~(7u << 09)) | ((uint)(value & 7) << 09)); }
-    public override int RibbonCountG3Tough       { get => (int)(RIB0 >> 12) & 7; set => RIB0 = ((RIB0 & ~(7u << 12)) | ((uint)(value & 7) << 12)); }
+    public override byte RibbonCountG3Cool        { get => (byte)((RIB0 >> 00) & 7); set => RIB0 = ((RIB0 & ~(7u << 00)) | ((uint)(value & 7) << 00)); }
+    public override byte RibbonCountG3Beauty      { get => (byte)((RIB0 >> 03) & 7); set => RIB0 = ((RIB0 & ~(7u << 03)) | ((uint)(value & 7) << 03)); }
+    public override byte RibbonCountG3Cute        { get => (byte)((RIB0 >> 06) & 7); set => RIB0 = ((RIB0 & ~(7u << 06)) | ((uint)(value & 7) << 06)); }
+    public override byte RibbonCountG3Smart       { get => (byte)((RIB0 >> 09) & 7); set => RIB0 = ((RIB0 & ~(7u << 09)) | ((uint)(value & 7) << 09)); }
+    public override byte RibbonCountG3Tough       { get => (byte)((RIB0 >> 12) & 7); set => RIB0 = ((RIB0 & ~(7u << 12)) | ((uint)(value & 7) << 12)); }
     public override bool RibbonChampionG3        { get => (RIB0 & (1 << 15)) == 1 << 15; set => RIB0 = ((RIB0 & ~(1u << 15)) | (value ? 1u << 15 : 0u)); }
     public override bool RibbonWinning           { get => (RIB0 & (1 << 16)) == 1 << 16; set => RIB0 = ((RIB0 & ~(1u << 16)) | (value ? 1u << 16 : 0u)); }
     public override bool RibbonVictory           { get => (RIB0 & (1 << 17)) == 1 << 17; set => RIB0 = ((RIB0 & ~(1u << 17)) | (value ? 1u << 17 : 0u)); }
@@ -323,11 +323,11 @@ public sealed class PK3 : G3PKM, ISanityChecksum
         }
 
         // Remove HM moves
-        var banned = Legal.HM_3;
-        if (Array.IndexOf(banned, Move1) != -1) pk4.Move1 = 0;
-        if (Array.IndexOf(banned, Move2) != -1) pk4.Move2 = 0;
-        if (Array.IndexOf(banned, Move3) != -1) pk4.Move3 = 0;
-        if (Array.IndexOf(banned, Move4) != -1) pk4.Move4 = 0;
+        ReadOnlySpan<ushort> banned = LearnSource3.HM_3;
+        if (banned.Contains(Move1)) pk4.Move1 = 0;
+        if (banned.Contains(Move2)) pk4.Move2 = 0;
+        if (banned.Contains(Move3)) pk4.Move3 = 0;
+        if (banned.Contains(Move4)) pk4.Move4 = 0;
         pk4.FixMoves();
         pk4.HealPP();
 

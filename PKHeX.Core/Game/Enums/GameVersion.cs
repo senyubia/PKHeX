@@ -1,14 +1,14 @@
-﻿namespace PKHeX.Core;
+namespace PKHeX.Core;
 
 /// <summary>
 /// Game Version ID enum shared between actual Version IDs and lumped version groupings.
 /// </summary>
-public enum GameVersion
+public enum GameVersion : byte
 {
     #region Indicators for method empty arguments & result indication. Not stored values.
-    Invalid = -2,
-    Any = -1,
-    Unknown = 0,
+    Any = 0,
+    Unknown = byte.MaxValue - 1,
+    Invalid = byte.MaxValue,
     #endregion
 
     // The following values are IDs stored within PKM data, and can also identify individual games.
@@ -219,6 +219,16 @@ public enum GameVersion
     /// Pokémon Shining Pearl (NX)
     /// </summary>
     SP = 49,
+
+    /// <summary>
+    /// Pokémon Scarlet (NX)
+    /// </summary>
+    SL = 50,
+
+    /// <summary>
+    /// Pokémon Violet (NX)
+    /// </summary>
+    VL = 51,
     #endregion
 
     // The following values are not actually stored values in pk data,
@@ -405,6 +415,14 @@ public enum GameVersion
     BDSP,
 
     /// <summary>
+    /// Pokémon Scarlet &amp; Violet
+    /// </summary>
+    /// <remarks>Used to lump data from the associated games as data assets are shared.</remarks>
+    /// <see cref="SL"/>
+    /// <see cref="VL"/>
+    SV,
+
+    /// <summary>
     /// Generation 1 Games
     /// </summary>
     /// <see cref="RBY"/>
@@ -465,6 +483,12 @@ public enum GameVersion
     /// <see cref="BDSP"/>
     /// <see cref="PLA"/>
     Gen8,
+
+    /// <summary>
+    /// Generation 9 Games
+    /// </summary>
+    /// <see cref="SV"/>
+    Gen9,
 
     /// <summary>
     /// Pocket Monsters Stadium data origin identifier

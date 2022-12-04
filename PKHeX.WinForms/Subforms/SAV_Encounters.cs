@@ -22,11 +22,13 @@ public partial class SAV_Encounters : Form
     private readonly SummaryPreviewer ShowSet = new();
     private readonly TrainerDatabase Trainers;
     private readonly CancellationTokenSource TokenSource = new();
+    private readonly EntityInstructionBuilder UC_Builder;
 
     public SAV_Encounters(PKMEditor f1, TrainerDatabase db)
     {
         InitializeComponent();
-        var UC_Builder = new EntityInstructionBuilder(() => f1.PreparePKM())
+        WinFormsUtil.TranslateInterface(this, Main.CurrentLanguage);
+        UC_Builder = new EntityInstructionBuilder(() => f1.PreparePKM())
         {
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             Width = Tab_Advanced.Width,
@@ -34,8 +36,7 @@ public partial class SAV_Encounters : Form
             ReadOnly = true,
         };
         Tab_Advanced.Controls.Add(UC_Builder);
-
-        WinFormsUtil.TranslateInterface(this, Main.CurrentLanguage);
+        UC_Builder.SendToBack();
 
         PKME_Tabs = f1;
         Trainers = db;
@@ -183,7 +184,7 @@ public partial class SAV_Encounters : Form
         CB_Species.InitializeBinding();
         CB_GameOrigin.InitializeBinding();
 
-        var Any = new ComboItem(MsgAny, -1);
+        var Any = new ComboItem(MsgAny, 0);
 
         var DS_Species = new List<ComboItem>(GameInfo.SpeciesDataSource);
         DS_Species.RemoveAt(0); DS_Species.Insert(0, Any); CB_Species.DataSource = DS_Species;
@@ -200,7 +201,9 @@ public partial class SAV_Encounters : Form
         }
 
         var DS_Version = new List<ComboItem>(GameInfo.VersionDataSource);
-        DS_Version.Insert(0, Any); CB_GameOrigin.DataSource = DS_Version;
+        DS_Version.Insert(0, Any);
+        DS_Version.RemoveAt(DS_Version.Count - 1);
+        CB_GameOrigin.DataSource = DS_Version;
 
         // Trigger a Reset
         ResetFilters(this, EventArgs.Empty);
@@ -225,15 +228,15 @@ public partial class SAV_Encounters : Form
     private IEnumerable<IEncounterInfo> SearchDatabase(CancellationToken token)
     {
         var settings = GetSearchSettings();
-        var moves = settings.Moves.ToArray();
 
         // If nothing is specified, instead of just returning all possible encounters, just return nothing.
-        if (settings.Species <= 0 && moves.Length == 0 && Main.Settings.EncounterDb.ReturnNoneIfEmptySearch)
+        if (settings.Species == 0 && settings.Moves.Count == 0 && Main.Settings.EncounterDb.ReturnNoneIfEmptySearch)
             return Array.Empty<IEncounterInfo>();
         var pk = SAV.BlankPKM;
 
+        var moves = settings.Moves.ToArray();
         var versions = settings.GetVersions(SAV);
-        var species = settings.Species <= 0 ? Enumerable.Range(1, SAV.MaxSpeciesID) : new[] { settings.Species };
+        var species = settings.Species == 0 ? GetFullRange(SAV.MaxSpeciesID) : new[] { settings.Species };
         var results = GetAllSpeciesFormEncounters(species, SAV.Personal, versions, moves, pk, token);
         if (settings.SearchEgg != null)
             results = results.Where(z => z.EggEncounter == settings.SearchEgg);
@@ -246,11 +249,13 @@ public partial class SAV_Encounters : Form
 
         if (Main.Settings.EncounterDb.FilterUnavailableSpecies)
         {
+            static bool IsPresentInGameSV  (ISpeciesForm pk) => PersonalTable.SV  .IsPresentInGame(pk.Species, pk.Form);
             static bool IsPresentInGameSWSH(ISpeciesForm pk) => PersonalTable.SWSH.IsPresentInGame(pk.Species, pk.Form);
             static bool IsPresentInGameBDSP(ISpeciesForm pk) => PersonalTable.BDSP.IsPresentInGame(pk.Species, pk.Form);
             static bool IsPresentInGameLA  (ISpeciesForm pk) => PersonalTable.LA  .IsPresentInGame(pk.Species, pk.Form);
             results = SAV switch
             {
+                SAV9SV => results.Where(IsPresentInGameSV),
                 SAV8SWSH => results.Where(IsPresentInGameSWSH),
                 SAV8BS => results.Where(IsPresentInGameBDSP),
                 SAV8LA => results.Where(IsPresentInGameLA),
@@ -271,7 +276,13 @@ public partial class SAV_Encounters : Form
         return results;
     }
 
-    private static IEnumerable<IEncounterInfo> GetAllSpeciesFormEncounters(IEnumerable<int> species, PersonalTable pt, IReadOnlyList<GameVersion> versions, int[] moves, PKM pk, CancellationToken token)
+    private static IEnumerable<ushort> GetFullRange(int max)
+    {
+        for (ushort i = 1; i <= max; i++)
+            yield return i;
+    }
+
+    private static IEnumerable<IEncounterInfo> GetAllSpeciesFormEncounters(IEnumerable<ushort> species, IPersonalTable pt, IReadOnlyList<GameVersion> versions, ushort[] moves, PKM pk, CancellationToken token)
     {
         foreach (var s in species)
         {
@@ -286,7 +297,7 @@ public partial class SAV_Encounters : Form
                 pi = PersonalTable.USUM.GetFormEntry(s, 0);
                 fc = pi.FormCount;
             }
-            for (int f = 0; f < fc; f++)
+            for (byte f = 0; f < fc; f++)
             {
                 if (FormInfo.IsBattleOnlyForm(s, f, pk.Format))
                     continue;
@@ -315,7 +326,7 @@ public partial class SAV_Encounters : Form
         }
     }
 
-    private static IEnumerable<IEncounterInfo> GetEncounters(int species, int form, int[] moves, PKM pk, IReadOnlyList<GameVersion> vers)
+    private static IEnumerable<IEncounterInfo> GetEncounters(ushort species, byte form, ushort[] moves, PKM pk, IReadOnlyList<GameVersion> vers)
     {
         pk.Species = species;
         pk.Form = form;
@@ -330,16 +341,24 @@ public partial class SAV_Encounters : Form
             Format = SAV.Generation, // 0->(n-1) => 1->n
             Generation = SAV.Generation,
 
-            Species = WinFormsUtil.GetIndex(CB_Species),
+            Species = GetU16(CB_Species),
 
             BatchInstructions = RTB_Instructions.Lines,
             Version = WinFormsUtil.GetIndex(CB_GameOrigin),
         };
 
-        settings.AddMove(WinFormsUtil.GetIndex(CB_Move1));
-        settings.AddMove(WinFormsUtil.GetIndex(CB_Move2));
-        settings.AddMove(WinFormsUtil.GetIndex(CB_Move3));
-        settings.AddMove(WinFormsUtil.GetIndex(CB_Move4));
+        static ushort GetU16(ListControl cb)
+        {
+            var val = WinFormsUtil.GetIndex(cb);
+            if (val <= 0)
+                return 0;
+            return (ushort)val;
+        }
+
+        settings.AddMove(GetU16(CB_Move1));
+        settings.AddMove(GetU16(CB_Move2));
+        settings.AddMove(GetU16(CB_Move3));
+        settings.AddMove(GetU16(CB_Move4));
 
         if (CHK_IsEgg.CheckState != CheckState.Indeterminate)
             settings.SearchEgg = CHK_IsEgg.CheckState == CheckState.Checked;
@@ -453,4 +472,16 @@ public partial class SAV_Encounters : Form
     }
 
     private void SAV_Encounters_FormClosing(object sender, FormClosingEventArgs e) => TokenSource.Cancel();
+
+    private void B_Add_Click(object sender, EventArgs e)
+    {
+        var s = UC_Builder.Create();
+        if (s.Length == 0)
+        { WinFormsUtil.Alert(MsgBEPropertyInvalid); return; }
+
+        if (RTB_Instructions.Lines.Length != 0 && RTB_Instructions.Lines[^1].Length > 0)
+            s = Environment.NewLine + s;
+
+        RTB_Instructions.AppendText(s);
+    }
 }

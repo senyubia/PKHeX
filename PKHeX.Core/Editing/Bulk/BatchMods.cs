@@ -5,6 +5,9 @@ using static PKHeX.Core.BatchEditing;
 
 namespace PKHeX.Core;
 
+/// <summary>
+/// Modifications for Batch Editing
+/// </summary>
 public static class BatchMods
 {
     public static readonly List<ISuggestModification> SuggestionMods = new()
@@ -15,8 +18,8 @@ public static class BatchMods
         new TypeSuggestion<IScaledSizeValue>(nameof(IScaledSizeValue.WeightAbsolute), p => p.ResetWeight()),
         new TypeSuggestion<IHyperTrain>(nameof(Extensions.HyperTrainClear), p => p.HyperTrainClear()),
         new TypeSuggestion<IGeoTrack>(nameof(Extensions.ClearGeoLocationData), p => p.ClearGeoLocationData()),
-        new TypeSuggestion<IAwakened>(nameof(Extensions.AwakeningClear), p => p.AwakeningClear()),
-        new TypeSuggestion<IAwakened>(nameof(Extensions.AwakeningMax), p => p.AwakeningMax()),
+        new TypeSuggestion<IAwakened>(nameof(AwakeningUtil.AwakeningClear), p => p.AwakeningClear()),
+        new TypeSuggestion<IAwakened>(nameof(AwakeningUtil.AwakeningMax), p => p.AwakeningMax()),
         new TypeSuggestion<IGanbaru>(nameof(GanbaruExtensions.ClearGanbaruValues), p => p.ClearGanbaruValues()),
         new TypeSuggestion<IGanbaru>(nameof(GanbaruExtensions.SetSuggestedGanbaruValues), p => p.SetSuggestedGanbaruValues((PKM)p)),
 
@@ -43,7 +46,7 @@ public static class BatchMods
         new ComplexSuggestion(PROP_RIBBONS, (_, value, info) => BatchModifications.SetSuggestedRibbons(info, value)),
         new ComplexSuggestion(nameof(PKM.Met_Location), (_, _, info) => BatchModifications.SetSuggestedMetData(info)),
         new ComplexSuggestion(nameof(PKM.CurrentLevel), (_, _, info) => BatchModifications.SetMinimumCurrentLevel(info)),
-        new ComplexSuggestion(PROP_CONTESTSTATS, p => p is IContestStatsMutable, (_, value, info) => BatchModifications.SetContestStats(info.Entity, info.Legality, value)),
+        new ComplexSuggestion(PROP_CONTESTSTATS, p => p is IContestStats, (_, value, info) => BatchModifications.SetContestStats(info.Entity, info.Legality, value)),
         new ComplexSuggestion(PROP_MOVEMASTERY, (_, value, info) => BatchModifications.SetSuggestedMasteryData(info, value)),
     };
 
@@ -60,8 +63,8 @@ public static class BatchMods
         new ComplexSet(nameof(PKM.PID), value => value == nameof(PKM.EncryptionConstant), (pk, _) => pk.PID = pk.EncryptionConstant),
 
         // Realign to Derived Value
-        new ComplexSet(nameof(PKM.Ability), value => value.StartsWith(CONST_SPECIAL), (pk, cmd) => pk.RefreshAbility(Convert.ToInt16(cmd.PropertyValue[1]) - 0x30)),
-        new ComplexSet(nameof(PKM.AbilityNumber), value => value.StartsWith(CONST_SPECIAL), (pk, cmd) => pk.RefreshAbility(Convert.ToInt16(cmd.PropertyValue[1]) - 0x30)),
+        new ComplexSet(nameof(PKM.Ability), value => value.Length == 2 && value.StartsWith(CONST_SPECIAL), (pk, cmd) => pk.RefreshAbility(Convert.ToInt16(cmd.PropertyValue[1]) - 0x30)),
+        new ComplexSet(nameof(PKM.AbilityNumber), value => value.Length == 2 && value.StartsWith(CONST_SPECIAL), (pk, cmd) => pk.RefreshAbility(Convert.ToInt16(cmd.PropertyValue[1]) - 0x30)),
 
         // Random
         new ComplexSet(nameof(PKM.EncryptionConstant), value => value == CONST_RAND, (pk, _) => pk.EncryptionConstant = Util.Rand32()),
@@ -76,7 +79,34 @@ public static class BatchMods
 
         new ComplexSet(nameof(PKM.Species), value => value == "0", (pk, _) => Array.Clear(pk.Data, 0, pk.Data.Length)),
         new ComplexSet(nameof(PKM.IsNicknamed), value => string.Equals(value, "false", StringComparison.OrdinalIgnoreCase), (pk, _) => pk.SetDefaultNickname()),
+
+        // Complicated
+        new ComplexSet(nameof(PKM.EncryptionConstant), value => value.StartsWith(CONST_RAND), (pk, cmd) => SetComplicatedEC(pk, cmd.PropertyValue[^1])),
     };
+
+    private static void SetComplicatedEC(PKM pk, char option)
+    {
+        var rng = Util.Rand;
+        uint rand = rng.Rand32();
+        uint mod = 1, noise = 0;
+        if (pk.Species is >= (int)Species.Wurmple and <= (int)Species.Dustox)
+        {
+            mod = 10;
+            bool lower = option is '0' or 'B' or 'S' || WurmpleUtil.GetWurmpleEvoGroup(pk.Species) == 0;
+            noise = (lower ? 0u : 5u) + (uint)rng.Next(0, 5);
+        }
+        else if (pk.Species is (int)Species.Dunsparce or (int)Species.Dudunsparce or (int)Species.Tandemaus or (int)Species.Maushold)
+        {
+            mod = 100;
+            noise = option is '0' or '3' ? 0u : (uint)rng.Next(1, 100);
+        }
+        else if (option is >= '0' and <= '5')
+        {
+            mod = 6;
+            noise = (uint)(option - '0');
+        }
+        pk.EncryptionConstant = unchecked(rand - (rand % mod) + noise);
+    }
 
     private static void SetRandomEVs(PKM pk)
     {

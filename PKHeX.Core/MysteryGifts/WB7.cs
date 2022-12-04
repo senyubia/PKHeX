@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using static System.Buffers.Binary. BinaryPrimitives;
 
 namespace PKHeX.Core;
@@ -14,6 +13,7 @@ public sealed class WB7 : DataMysteryGift, ILangNick, IAwakened, INature, ILangN
     private const int CardStart = SizeFull - Size;
 
     public override int Generation => 7;
+    public override EntityContext Context => EntityContext.Gen7b;
 
     public WB7() : this(new byte[SizeFull]) { }
     public WB7(byte[] data) : base(data) { }
@@ -177,12 +177,12 @@ public sealed class WB7 : DataMysteryGift, ILangNick, IAwakened, INature, ILangN
         set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0x78), (ushort)value);
     }
 
-    public int Move1 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0x7A)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0x7A), (ushort)value); }
-    public int Move2 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0x7C)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0x7C), (ushort)value); }
-    public int Move3 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0x7E)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0x7E), (ushort)value); }
-    public int Move4 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0x80)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0x80), (ushort)value); }
-    public override int Species { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0x82)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0x82), (ushort)value); }
-    public override int Form { get => Data[CardStart + 0x84]; set => Data[CardStart + 0x84] = (byte)value; }
+    public ushort Move1 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0x7A)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0x7A), value); }
+    public ushort Move2 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0x7C)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0x7C), value); }
+    public ushort Move3 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0x7E)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0x7E), value); }
+    public ushort Move4 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0x80)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0x80), value); }
+    public override ushort Species { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0x82)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0x82), value); }
+    public override byte Form { get => Data[CardStart + 0x84]; set => Data[CardStart + 0x84] = value; }
 
     // public int Language { get => Data[CardStart + 0x85]; set => Data[CardStart + 0x85] = (byte)value; }
 
@@ -220,10 +220,10 @@ public sealed class WB7 : DataMysteryGift, ILangNick, IAwakened, INature, ILangN
     public ushort AdditionalItem { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0xD2)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0xD2), value); }
 
     public uint PID { get => ReadUInt32LittleEndian(Data.AsSpan(0xD4)); set => WriteUInt32LittleEndian(Data.AsSpan(0xD4), value); }
-    public int RelearnMove1 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0xD8)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0xD8), (ushort)value); }
-    public int RelearnMove2 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0xDA)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0xDA), (ushort)value); }
-    public int RelearnMove3 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0xDC)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0xDC), (ushort)value); }
-    public int RelearnMove4 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0xDE)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0xDE), (ushort)value); }
+    public ushort RelearnMove1 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0xD8)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0xD8), value); }
+    public ushort RelearnMove2 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0xDA)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0xDA), value); }
+    public ushort RelearnMove3 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0xDC)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0xDC), value); }
+    public ushort RelearnMove4 { get => ReadUInt16LittleEndian(Data.AsSpan(CardStart + 0xDE)); set => WriteUInt16LittleEndian(Data.AsSpan(CardStart + 0xDE), value); }
 
     public byte AV_HP  { get => Data[CardStart + 0xE5]; set => Data[CardStart + 0xE5] = value; }
     public byte AV_ATK { get => Data[CardStart + 0xE6]; set => Data[CardStart + 0xE6] = value; }
@@ -268,32 +268,41 @@ public sealed class WB7 : DataMysteryGift, ILangNick, IAwakened, INature, ILangN
 
     public override int Location { get => MetLocation; set => MetLocation = (ushort)value; }
 
-    public override IReadOnlyList<int> Moves
+    public override Moveset Moves
     {
-        get => new[] { Move1, Move2, Move3, Move4 };
+        get => new(Move1, Move2, Move3, Move4);
         set
         {
-            if (value.Count > 0) Move1 = value[0];
-            if (value.Count > 1) Move2 = value[1];
-            if (value.Count > 2) Move3 = value[2];
-            if (value.Count > 3) Move4 = value[3];
+            Move1 = value.Move1;
+            Move2 = value.Move2;
+            Move3 = value.Move3;
+            Move4 = value.Move4;
         }
     }
 
-    public override IReadOnlyList<int> Relearn
+    public override Moveset Relearn
     {
-        get => new[] { RelearnMove1, RelearnMove2, RelearnMove3, RelearnMove4 };
+        get => new(RelearnMove1, RelearnMove2, RelearnMove3, RelearnMove4);
         set
         {
-            if (value.Count > 0) RelearnMove1 = value[0];
-            if (value.Count > 1) RelearnMove2 = value[1];
-            if (value.Count > 2) RelearnMove3 = value[2];
-            if (value.Count > 3) RelearnMove4 = value[3];
+            RelearnMove1 = value.Move1;
+            RelearnMove2 = value.Move2;
+            RelearnMove3 = value.Move3;
+            RelearnMove4 = value.Move4;
         }
     }
 
-    public override string OT_Name { get; set; } = string.Empty;
-    public string Nickname => string.Empty;
+    public override string OT_Name
+    {
+        get => GetOT(Language);
+        set
+        {
+            for (int i = 1; i < (int)LanguageID.ChineseT; i++)
+                SetOT(i, value);
+        }
+    }
+
+    public string Nickname => GetIsNicknamed(Language) ? GetNickname(Language) : string.Empty;
     public bool IsNicknamed => false;
     public int Language => 2;
 
@@ -309,6 +318,8 @@ public sealed class WB7 : DataMysteryGift, ILangNick, IAwakened, INature, ILangN
             return (int)LanguageID.English; // fallback
         return redeemLanguage;
     }
+
+    public bool GetHasOT(int language) => ReadUInt16LittleEndian(Data.AsSpan(GetOTOffset(language))) != 0;
 
     public string GetNickname(int language) => StringConverter8.GetString(Data.AsSpan(GetNicknameOffset(language), 0x1A));
     public void SetNickname(int language, string value) => StringConverter8.SetString(Data.AsSpan(GetNicknameOffset(language), 0x1A), value.AsSpan(), 12, StringConverterOption.ClearZero);
@@ -341,8 +352,7 @@ public sealed class WB7 : DataMysteryGift, ILangNick, IAwakened, INature, ILangN
 
         var redeemLanguage = tr.Language;
         var language = GetLanguage(redeemLanguage);
-        var OT = GetOT(redeemLanguage);
-        bool isRedeemHT = OT.Length != 0;
+        bool hasOT = GetHasOT(redeemLanguage);
 
         var pk = new PB7
         {
@@ -373,9 +383,8 @@ public sealed class WB7 : DataMysteryGift, ILangNick, IAwakened, INature, ILangN
             AV_SPA = AV_SPA,
             AV_SPD = AV_SPD,
 
-            OT_Name = isRedeemHT ? OT : tr.OT,
+            OT_Name = hasOT ? GetOT(redeemLanguage) : tr.OT,
             OT_Gender = OTGender != 3 ? OTGender % 2 : tr.Gender,
-            CurrentHandler = isRedeemHT ? 1 : 0,
 
             EXP = Experience.GetEXP(currentLevel, pi.EXPGrowth),
 
@@ -383,10 +392,11 @@ public sealed class WB7 : DataMysteryGift, ILangNick, IAwakened, INature, ILangN
             FatefulEncounter = true,
         };
 
-        if (isRedeemHT)
+        if (hasOT)
         {
             pk.HT_Name = tr.OT;
             pk.HT_Gender = tr.Gender;
+            pk.CurrentHandler = 1;
         }
 
         pk.SetMaximumPPCurrent();
@@ -426,7 +436,7 @@ public sealed class WB7 : DataMysteryGift, ILangNick, IAwakened, INature, ILangN
     {
         pk.IsEgg = true;
         pk.EggMetDate = Date;
-        pk.Nickname = SpeciesName.GetSpeciesNameGeneration(0, pk.Language, Generation);
+        pk.Nickname = SpeciesName.GetEggName(pk.Language, Generation);
         pk.IsNicknamed = true;
     }
 
@@ -482,9 +492,9 @@ public sealed class WB7 : DataMysteryGift, ILangNick, IAwakened, INature, ILangN
     {
         Span<int> finalIVs = stackalloc int[6];
         GetIVs(finalIVs);
-        var ivflag = finalIVs.Find(iv => (byte)(iv - 0xFC) < 3);
+        var ivflag = finalIVs.Find(static iv => (byte)(iv - 0xFC) < 3);
         var rng = Util.Rand;
-        if (ivflag == 0) // Random IVs
+        if (ivflag == default) // Random IVs
         {
             for (int i = 0; i < finalIVs.Length; i++)
             {

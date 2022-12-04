@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Windows.Forms;
 using PKHeX.Core;
@@ -185,23 +185,23 @@ public partial class SAV_SecretBase : Form
     private void SavePKM(SecretBase6PKM pk)
     {
         pk.EncryptionConstant = Util.GetHexValue(TB_EC.Text);
-        pk.Species = WinFormsUtil.GetIndex(CB_Species);
+        pk.Species = (ushort)WinFormsUtil.GetIndex(CB_Species);
         pk.HeldItem = WinFormsUtil.GetIndex(CB_HeldItem);
         pk.Ability = WinFormsUtil.GetIndex(CB_Ability);
         pk.AbilityNumber = CB_Ability.SelectedIndex << 1;
         pk.Nature = WinFormsUtil.GetIndex(CB_Nature);
         pk.Gender = EntityGender.GetFromString(Label_Gender.Text);
-        pk.Form = CB_Form.SelectedIndex;
+        pk.Form = (byte)CB_Form.SelectedIndex;
         pk.EV_HP = Math.Min(Convert.ToInt32(TB_HPEV.Text), 252);
         pk.EV_ATK = Math.Min(Convert.ToInt32(TB_ATKEV.Text), 252);
         pk.EV_DEF = Math.Min(Convert.ToInt32(TB_DEFEV.Text), 252);
         pk.EV_SPA = Math.Min(Convert.ToInt32(TB_SPAEV.Text), 252);
         pk.EV_SPD = Math.Min(Convert.ToInt32(TB_SPDEV.Text), 252);
         pk.EV_SPE = Math.Min(Convert.ToInt32(TB_SPEEV.Text), 252);
-        pk.Move1 = WinFormsUtil.GetIndex(CB_Move1);
-        pk.Move2 = WinFormsUtil.GetIndex(CB_Move2);
-        pk.Move3 = WinFormsUtil.GetIndex(CB_Move3);
-        pk.Move4 = WinFormsUtil.GetIndex(CB_Move4);
+        pk.Move1 = (ushort)WinFormsUtil.GetIndex(CB_Move1);
+        pk.Move2 = (ushort)WinFormsUtil.GetIndex(CB_Move2);
+        pk.Move3 = (ushort)WinFormsUtil.GetIndex(CB_Move3);
+        pk.Move4 = (ushort)WinFormsUtil.GetIndex(CB_Move4);
         pk.Move1_PPUps = CB_PPu1.SelectedIndex;
         pk.Move2_PPUps = CB_PPu2.SelectedIndex;
         pk.Move3_PPUps = CB_PPu3.SelectedIndex;
@@ -225,7 +225,7 @@ public partial class SAV_SecretBase : Form
         // Put data into fields.
         TB_EC.Text = pk.EncryptionConstant.ToString("X8");
         SetGenderLabel(pk.Gender);
-        CB_Species.SelectedValue = pk.Species;
+        CB_Species.SelectedValue = (int)pk.Species;
         CB_HeldItem.SelectedValue = pk.HeldItem;
         CB_Form.SelectedIndex = pk.Form;
 
@@ -249,10 +249,10 @@ public partial class SAV_SecretBase : Form
         TB_Friendship.Text = pk.CurrentFriendship.ToString();
         TB_Level.Text = pk.CurrentLevel.ToString();
 
-        CB_Move1.SelectedValue = pk.Move1;
-        CB_Move2.SelectedValue = pk.Move2;
-        CB_Move3.SelectedValue = pk.Move3;
-        CB_Move4.SelectedValue = pk.Move4;
+        CB_Move1.SelectedValue = (int)pk.Move1;
+        CB_Move2.SelectedValue = (int)pk.Move2;
+        CB_Move3.SelectedValue = (int)pk.Move3;
+        CB_Move4.SelectedValue = (int)pk.Move4;
         CB_PPu1.SelectedIndex = pk.Move1_PPUps;
         CB_PPu2.SelectedIndex = pk.Move2_PPUps;
         CB_PPu3.SelectedIndex = pk.Move3_PPUps;
@@ -313,27 +313,27 @@ public partial class SAV_SecretBase : Form
     #region PKM
     private void SetAbilityList()
     {
-        int species = WinFormsUtil.GetIndex(CB_Species);
-        var form = CB_Form.SelectedIndex;
+        var species = (ushort)WinFormsUtil.GetIndex(CB_Species);
+        var form = (byte)CB_Form.SelectedIndex;
         var index = CB_Ability.SelectedIndex;
         SetAbilityList(species, form, index);
     }
 
-    private void SetAbilityList(int species, int form, int abilityIndex)
+    private void SetAbilityList(ushort species, byte form, int abilityIndex)
     {
-        var abilities = PersonalTable.AO.GetFormEntry(species, form).Abilities;
-        var list = GameInfo.FilteredSources.GetAbilityList(abilities, 6);
+        var abilities = PersonalTable.AO.GetFormEntry(species, form);
+        var list = GameInfo.FilteredSources.GetAbilityList(abilities);
         CB_Ability.DataSource = new BindingSource(list, null);
         CB_Ability.SelectedIndex = abilityIndex < 3 ? abilityIndex : 0;
     }
 
     private void SetForms()
     {
-        int species = WinFormsUtil.GetIndex(CB_Species);
+        var species = (ushort)WinFormsUtil.GetIndex(CB_Species);
         bool hasForms = FormInfo.HasFormSelection(PersonalTable.AO[species], species, 6);
         CB_Form.Enabled = CB_Form.Visible = hasForms;
 
-        var list = FormConverter.GetFormList(species, GameInfo.Strings.types, GameInfo.Strings.forms, Main.GenderSymbols, 6);
+        var list = FormConverter.GetFormList(species, GameInfo.Strings.types, GameInfo.Strings.forms, Main.GenderSymbols, SAV.Context);
         CB_Form.DataSource = new BindingSource(list, null);
     }
 
@@ -345,7 +345,7 @@ public partial class SAV_SecretBase : Form
         var species = WinFormsUtil.GetIndex(CB_Species);
 
         // Set a sane gender
-        var gender = SAV.Personal[species].FixedGender;
+        var gender = SAV.Personal[species].RandomGender();
         if (gender == -1)
             gender = EntityGender.GetFromString(Label_Gender.Text);
         SetGenderLabel(gender);
@@ -366,13 +366,12 @@ public partial class SAV_SecretBase : Form
     {
         var species = WinFormsUtil.GetIndex(CB_Species);
         var pi = SAV.Personal[species];
-        var fg = pi.FixedGender;
-        if (fg == -1) // dual gender
-        {
-            fg = EntityGender.GetFromString(Label_Gender.Text);
-            fg = (fg ^ 1) & 1;
-        }
-        Label_Gender.Text = Main.GenderSymbols[fg];
+        int gender;
+        if (pi.IsDualGender) // dual gender
+            gender = (EntityGender.GetFromString(Label_Gender.Text) ^ 1) & 1;
+        else
+            gender = pi.FixedGender();
+        Label_Gender.Text = Main.GenderSymbols[gender];
     }
 
     private void SetGenderLabel(int gender)

@@ -19,6 +19,8 @@ public enum PogoType : byte
     Raid = 10,
     /// <summary> Mythical Pokémon captured after completing Raid Battles. </summary>
     RaidM,
+    /// <summary> Ultra Beasts captured after completing Raid Battles. Only Beast Balls can be used. </summary>
+    RaidUB,
 
     /// <summary> Pokémon captured after completing Field Research. </summary>
     Research = 20,
@@ -34,10 +36,7 @@ public enum PogoType : byte
     /// <summary> Mythical Pokémon captured from the GO Battle League. </summary>
     GBLM,
     /// <summary> Pokémon captured from the GO Battle League during GO Battle Day, excluding Legendary and Mythical Pokémon. </summary>
-    /// <remarks> On GO Battle Day (September 18, 2021), IV floor and ceiling were both temporarily set to 0 for non-Legendary encounters. This was fixed at 14:43 UTC (September 17, 2021). </remarks>
-    GBLZero,
-    /// <summary> Pokémon captured from the GO Battle League during GO Battle Day, excluding Legendary and Mythical Pokémon. </summary>
-    GBLDay,
+    GBLD,
 
     /// <summary> Pokémon captured after defeating members of Team GO Rocket. Must become Purified before transferring to Pokémon HOME. </summary>
     /// <remarks> Pokémon with this <see cref="PogoType"/> can not be moved to <see cref="GameVersion.GG"/>. </remarks>
@@ -55,14 +54,14 @@ public static class PogoTypeExtensions
         PogoType.EggS => 8,
         PogoType.Raid => 20,
         PogoType.RaidM => 20,
+        PogoType.RaidUB => 20,
         PogoType.Research => 15,
         PogoType.ResearchM => 15,
         PogoType.ResearchP => 15,
         PogoType.ResearchUB => 15,
         PogoType.GBL => 20,
         PogoType.GBLM => 20,
-        PogoType.GBLZero => 20,
-        PogoType.GBLDay => 20,
+        PogoType.GBLD => 20,
         PogoType.Shadow => 8,
         _ => 1,
     };
@@ -79,20 +78,8 @@ public static class PogoTypeExtensions
         PogoType.ResearchM => 10,
         PogoType.ResearchP => 10,
         PogoType.GBLM => 10,
-        PogoType.GBLZero => 0,
-        PogoType.GBLDay => 0,
+        PogoType.GBLD => 0,
         _ => 1,
-    };
-
-    /// <summary>
-    /// Gets the minimum IVs (relative to GO's 0-15) the <see cref="encounterType"/> must have.
-    /// </summary>
-    /// <param name="encounterType">Descriptor indicating how the Pokémon was encountered in GO.</param>
-    /// <returns>Required minimum IV (0-15)</returns>
-    public static int GetMaxIV(this PogoType encounterType) => encounterType switch
-    {
-        PogoType.GBLZero => 0,
-        _ => 15,
     };
 
     /// <summary>
@@ -120,6 +107,7 @@ public static class PogoTypeExtensions
         PogoType.EggS => Ball.Poke,
         PogoType.Raid => Ball.Premier,
         PogoType.RaidM => Ball.Premier,
+        PogoType.RaidUB => Ball.Beast,
         PogoType.ResearchP => Ball.Poke,
         PogoType.ResearchUB => Ball.Beast,
         PogoType.Shadow => Ball.Premier,

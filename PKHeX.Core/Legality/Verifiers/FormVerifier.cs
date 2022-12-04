@@ -66,9 +66,15 @@ public sealed class FormVerifier : Verifier
                 break;
             case Unown when Info.Generation == 2 && form >= 26:
                 return GetInvalid(string.Format(LFormInvalidRange, "Z", form == 26 ? "!" : "?"));
+            case Unown when Info.Generation == 3 && form != EntityPID.GetUnownForm3(pk.EncryptionConstant):
+                return GetInvalid(string.Format(LFormInvalidExpect_0, EntityPID.GetUnownForm3(pk.EncryptionConstant)));
             case Dialga or Palkia or Giratina or Arceus when form > 0 && pk is PA8: // can change forms with key items
                 break;
-            case Giratina when form == 1 ^ pk.HeldItem == 112: // Giratina, Origin form only with Griseous Orb
+
+            case Dialga   when pk.Format >= 9 && form == 1 ^ pk.HeldItem == 1777: // Origin Forme Dialga with Adamant Crystal
+            case Palkia   when pk.Format >= 9 && form == 1 ^ pk.HeldItem == 1778: // Origin Forme Palkia with Lustrous Globe
+            case Giratina when pk.Format >= 9 && form == 1 ^ pk.HeldItem == 1779: // Origin Forme Giratina with Griseous Core
+            case Giratina when pk.Format <= 8 && form == 1 ^ pk.HeldItem == 0112: // Origin Forme Giratina with Griseous Orb
                 return GetInvalid(LFormItemInvalid);
 
             case Arceus:
@@ -93,10 +99,14 @@ public sealed class FormVerifier : Verifier
             case Greninja:
                 if (form > 1) // Ash Battle Bond active
                     return GetInvalid(LFormBattle);
-                if (form != 0 && enc is not MysteryGift) // Formes are not breedable, MysteryGift already checked
+                if (form != 0 && enc is not MysteryGift) // Forms are not breedable, MysteryGift already checked
                     return GetInvalid(string.Format(LFormInvalidRange, 0, form));
                 break;
 
+            case Scatterbug or Spewpa or Vivillon when GameVersion.SV.Contains(enc.Version):
+                if (form != 18 && enc is EncounterEgg) // Fancy
+                    return GetInvalid(LFormVivillonNonNative);
+                break;
             case Scatterbug or Spewpa:
                 if (form > Vivillon3DS.MaxWildFormID) // Fancy & Pokéball
                     return GetInvalid(LFormVivillonEventPre);
@@ -202,39 +212,39 @@ public sealed class FormVerifier : Verifier
     private static readonly ushort[] Arceus_PlateIDs = { 303, 306, 304, 305, 309, 308, 310, 313, 298, 299, 301, 300, 307, 302, 311, 312, 644 };
     private static readonly ushort[] Arceus_ZCrystal = { 782, 785, 783, 784, 788, 787, 789, 792, 777, 778, 780, 779, 786, 781, 790, 791, 793 };
 
-    public static int GetArceusFormFromHeldItem(int item, int format) => item switch
+    public static byte GetArceusFormFromHeldItem(int item, int format) => item switch
     {
         (>= 777 and <= 793)        => GetArceusFormFromZCrystal(item),
         (>= 298 and <= 313) or 644 => GetArceusFormFromPlate(item, format),
         _ => 0,
     };
 
-    private static int GetArceusFormFromZCrystal(int item)
+    private static byte GetArceusFormFromZCrystal(int item)
     {
-        return Array.IndexOf(Arceus_ZCrystal, (ushort)item) + 1;
+        return (byte)(Array.IndexOf(Arceus_ZCrystal, (ushort)item) + 1);
     }
 
-    private static int GetArceusFormFromPlate(int item, int format)
+    private static byte GetArceusFormFromPlate(int item, int format)
     {
-        int form = Array.IndexOf(Arceus_PlateIDs, (ushort)item) + 1;
+        byte form = (byte)(Array.IndexOf(Arceus_PlateIDs, (ushort)item) + 1);
         if (format != 4) // No need to consider Curse type
             return form;
         if (form < 9)
             return form;
-        return form + 1; // ??? type Form shifts everything by 1
+        return ++form; // ??? type Form shifts everything by 1
     }
 
-    public static int GetSilvallyFormFromHeldItem(int item)
+    public static byte GetSilvallyFormFromHeldItem(int item)
     {
         if (item is >= 904 and <= 920)
-            return item - 903;
+            return (byte)(item - 903);
         return 0;
     }
 
-    public static int GetGenesectFormFromHeldItem(int item)
+    public static byte GetGenesectFormFromHeldItem(int item)
     {
         if (item is >= 116 and <= 119)
-            return item - 115;
+            return (byte)(item - 115);
         return 0;
     }
 
@@ -255,48 +265,12 @@ public sealed class FormVerifier : Verifier
                          ((enc.Generation == 6 && f.FormArgument <= byte.MaxValue) || IsFormArgumentDayCounterValid(f, 5, true))
                 => GetValid(LFormArgumentValid),
 
-            Furfrou when pk.Form != 0 => !IsFormArgumentDayCounterValid(f, 5, true) ? GetInvalid(LFormArgumentInvalid) :GetValid(LFormArgumentValid),
+            Furfrou when pk.Form != 0 => !IsFormArgumentDayCounterValid(f, 5, true) ? GetInvalid(LFormArgumentInvalid) : GetValid(LFormArgumentValid),
             Hoopa when pk.Form == 1 => !IsFormArgumentDayCounterValid(f, 3) ? GetInvalid(LFormArgumentInvalid) : GetValid(LFormArgumentValid),
             Yamask when pk.Form == 1 => arg switch
             {
                 not 0 when pk.IsEgg => GetInvalid(LFormArgumentNotAllowed),
                 > 9_999 => GetInvalid(LFormArgumentHigh),
-                _ => GetValid(LFormArgumentValid),
-            },
-            Runerigus when enc.Species == (int)Runerigus => arg switch
-            {
-                not 0 => GetInvalid(LFormArgumentNotAllowed),
-                _ => GetValid(LFormArgumentValid),
-            },
-            Runerigus => arg switch // From Yamask-1
-            {
-                < 49 => GetInvalid(LFormArgumentLow),
-                > 9_999 => GetInvalid(LFormArgumentHigh),
-                _ => GetValid(LFormArgumentValid),
-            },
-            Alcremie when enc.Species == (int)Alcremie => arg switch
-            {
-                not 0 => GetInvalid(LFormArgumentNotAllowed),
-                _ => GetValid(LFormArgumentValid),
-            },
-            Alcremie => arg switch // From Milcery
-            {
-                > (uint) AlcremieDecoration.Ribbon => GetInvalid(LFormArgumentHigh),
-                _ => GetValid(LFormArgumentValid),
-            },
-            Overqwil when enc.Species == (int)Overqwil => arg switch
-            {
-                not 0 => GetInvalid(LFormArgumentNotAllowed),
-                _ => GetValid(LFormArgumentValid),
-            },
-            Wyrdeer when enc.Species == (int)Wyrdeer => arg switch
-            {
-                not 0 => GetInvalid(LFormArgumentNotAllowed),
-                _ => GetValid(LFormArgumentValid),
-            },
-            Basculegion when enc.Species == (int)Basculegion => arg switch
-            {
-                not 0 => GetInvalid(LFormArgumentNotAllowed),
                 _ => GetValid(LFormArgumentValid),
             },
             Basculin when pk.Form is 2 => arg switch
@@ -308,37 +282,92 @@ public sealed class FormVerifier : Verifier
             Qwilfish when pk.Form is 1 => arg switch
             {
                 not 0 when pk.IsEgg => GetInvalid(LFormArgumentNotAllowed),
-                not 0 when pk.CurrentLevel < 25 => GetInvalid(LFormArgumentHigh),
+                not 0 when pk.CurrentLevel < 25 => GetInvalid(LFormArgumentHigh), // Can't get requisite move
                 > 9_999 => GetInvalid(LFormArgumentHigh),
                 _ => GetValid(LFormArgumentValid),
             },
-            Stantler when pk is PA8 || pk.HasVisitedLA(data.Info.EvoChainsAllGens.Gen8a) => arg switch
+            Gimmighoul => arg switch
+            {
+                not 0 when pk.IsEgg => GetInvalid(LFormArgumentNotAllowed),
+                > 9_999 => GetInvalid(LFormArgumentHigh),
+                _ => GetValid(LFormArgumentValid),
+            },
+            Stantler => arg switch
             {
                 not 0 when pk.IsEgg => GetInvalid(LFormArgumentNotAllowed),
                 not 0 when pk.CurrentLevel < 31 => GetInvalid(LFormArgumentHigh),
                 > 9_999 => GetInvalid(LFormArgumentHigh),
-                _ => GetValid(LFormArgumentValid),
+                _ => arg == 0 || HasVisitedPLA(data, Stantler) ? GetValid(LFormArgumentValid) : GetInvalid(LFormArgumentNotAllowed),
             },
-            Wyrdeer => arg switch // From Stantler
+            Primeape => arg switch
             {
-                < 20 => GetInvalid(LFormArgumentLow),
                 > 9_999 => GetInvalid(LFormArgumentHigh),
-                _ => GetValid(LFormArgumentValid),
+                _ => arg == 0 || HasVisitedSV(data, Primeape) ? GetValid(LFormArgumentValid) : GetInvalid(LFormArgumentNotAllowed),
             },
-            Overqwil => arg switch // From Qwilfish-1
+            Bisharp => arg switch
             {
-                < 20 => GetInvalid(LFormArgumentLow),
                 > 9_999 => GetInvalid(LFormArgumentHigh),
-                _ => GetValid(LFormArgumentValid),
+                _ => arg == 0 || HasVisitedSV(data, Bisharp) ? GetValid(LFormArgumentValid) : GetInvalid(LFormArgumentNotAllowed),
             },
-            Basculegion => arg switch // From Basculin-2
+            Runerigus   => VerifyFormArgumentRange(enc.Species, Runerigus,   arg,  49, 9999),
+            Alcremie    => VerifyFormArgumentRange(enc.Species, Alcremie,    arg,   0, (uint)AlcremieDecoration.Ribbon),
+            Wyrdeer     => VerifyFormArgumentRange(enc.Species, Wyrdeer,     arg,  20, 9999),
+            Basculegion => VerifyFormArgumentRange(enc.Species, Basculegion, arg, 294, 9999),
+            Overqwil    => VerifyFormArgumentRange(enc.Species, Overqwil,    arg,  20, 9999),
+            Gholdengo   => VerifyFormArgumentRange(enc.Species, Gholdengo,   arg, 999,  999),
+            Kingambit   => VerifyFormArgumentRange(enc.Species, Kingambit,   arg,   3, 9999),
+            Annihilape  => VerifyFormArgumentRange(enc.Species, Annihilape,  arg,  20, 9999),
+            Koraidon or Miraidon => enc switch
             {
-                < 294 => GetInvalid(LFormArgumentLow),
-                > 9_999 => GetInvalid(LFormArgumentHigh),
-                _ => GetValid(LFormArgumentValid),
+                // Starter Legend has '1' when present in party, to differentiate.
+                // Cannot be traded to other games.
+                EncounterStatic9 { StarterBoxLegend: true } x when !(ParseSettings.ActiveTrainer is SAV9SV sv && sv.Version == x.Version) => GetInvalid(LTradeNotAvailable),
+                EncounterStatic9 { StarterBoxLegend: true } => arg switch
+                {
+                  < 1 => GetInvalid(LFormArgumentLow),
+                    1 => data.SlotOrigin != SlotOrigin.Party ? GetInvalid(LFormParty) : GetValid(LFormArgumentValid),
+                  > 1 => GetInvalid(LFormArgumentHigh),
+                },
+                _ => arg switch
+                {
+                    not 0 => GetInvalid(LFormArgumentNotAllowed),
+                    _ => GetValid(LFormArgumentValid),
+                },
             },
             _ => VerifyFormArgumentNone(pk, f),
         };
+    }
+    
+    private static bool HasVisitedPLA(LegalityAnalysis data, Species species)
+    {
+        var evos = data.Info.EvoChainsAllGens;
+        if (evos.HasVisited(EntityContext.Gen8a, (ushort)species))
+            return true;
+        return false;
+    }
+
+    private static bool HasVisitedSV(LegalityAnalysis data, Species species)
+    {
+        var evos = data.Info.EvoChainsAllGens;
+        if (evos.HasVisited(EntityContext.Gen9, (ushort)species))
+            return true;
+        return false;
+    }
+
+    private CheckResult VerifyFormArgumentRange(ushort encSpecies, Species check, uint value, uint min, uint max)
+    {
+        if (encSpecies == (ushort)check)
+        {
+            if (value == 0)
+                return GetValid(LFormArgumentValid);
+            return GetInvalid(LFormArgumentNotAllowed);
+        }
+
+        if (value < min)
+            return GetInvalid(LFormArgumentLow);
+        if (value > max)
+            return GetInvalid(LFormArgumentHigh);
+        return GetValid(LFormArgumentValid);
     }
 
     private CheckResult VerifyFormArgumentNone(PKM pk, IFormArgument f)

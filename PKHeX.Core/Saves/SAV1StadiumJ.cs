@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using static System.Buffers.Binary.BinaryPrimitives;
 
@@ -13,7 +13,7 @@ public sealed class SAV1StadiumJ : SAV_STADIUM
     public override int SaveRevision => 0;
     public override string SaveRevisionString => "0"; // so we're different from Japanese SAV1Stadium naming...
 
-    public override PersonalTable Personal => PersonalTable.Y;
+    public override IPersonalTable Personal => PersonalTable.Y;
     public override int MaxEV => ushort.MaxValue;
     public override IReadOnlyList<ushort> HeldItems => Array.Empty<ushort>();
     public override GameVersion Version { get; protected set; } = GameVersion.StadiumJ;
@@ -23,13 +23,13 @@ public sealed class SAV1StadiumJ : SAV_STADIUM
     public override int Generation => 1;
     public override EntityContext Context => EntityContext.Gen1;
     private const int StringLength = 6; // Japanese Only
-    public override int OTLength => StringLength;
-    public override int NickLength => StringLength;
+    public override int MaxStringLengthOT => StringLength;
+    public override int MaxStringLengthNickname => StringLength;
     public override int BoxCount => 4; // 8 boxes stored sequentially; latter 4 are backups
     public override int BoxSlotCount => 30;
 
-    public override int MaxMoveID => Legal.MaxMoveID_1;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_1;
+    public override ushort MaxMoveID => Legal.MaxMoveID_1;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_1;
     public override int MaxAbilityID => Legal.MaxAbilityID_1;
     public override int MaxItemID => Legal.MaxItemID_1;
     private const int SIZE_PK1J = PokeCrypto.SIZE_1STORED + (2 * StringLength); // 0x2D

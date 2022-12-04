@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace PKHeX.Core;
@@ -120,8 +120,8 @@ public sealed class PB8 : G8PKM
     }
 
     // Maximums
-    public override int MaxMoveID => Legal.MaxMoveID_8b;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_8b;
+    public override ushort MaxMoveID => Legal.MaxMoveID_8b;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_8b;
     public override int MaxAbilityID => Legal.MaxAbilityID_8b;
     public override int MaxItemID => Legal.MaxItemID_8b;
     public override int MaxBallID => Legal.MaxBallID_8b;
@@ -132,10 +132,6 @@ public sealed class PB8 : G8PKM
     public PK8 ConvertToPK8()
     {
         var pk = ConvertTo<PK8>();
-        if (pk.Egg_Location == Locations.Default8bNone)
-            pk.Egg_Location = 0;
-        else
-            pk.Egg_Location = Locations.HOME_SWSHBDSPEgg;
         pk.SanitizeImport();
         return pk;
     }
@@ -157,9 +153,15 @@ public sealed class PB8 : G8PKM
 
         var index = table.GetFormIndex(Species, Form);
         var learn = learnsets[index];
-        Span<int> moves = stackalloc int[4];
+        Span<ushort> moves = stackalloc ushort[4];
         learn.SetEncounterMoves(CurrentLevel, moves);
         SetMoves(moves);
         this.SetMaximumPPCurrent(moves);
+    }
+
+    public PK9 ConvertToPK9()
+    {
+        // Todo: Transfer to PK9
+        return new PK9();
     }
 }

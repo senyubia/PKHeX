@@ -1,8 +1,11 @@
-﻿using System;
+using System;
 using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace PKHeX.Core;
 
+/// <summary>
+/// Side game data for <see cref="PA8"/> data transferred into HOME.
+/// </summary>
 public sealed class GameDataPA8 : HomeOptional1, IGameDataSide, IScaledSizeAbsolute
 {
     private const int SIZE = HomeCrypto.SIZE_1GAME_PA8;
@@ -20,19 +23,19 @@ public sealed class GameDataPA8 : HomeOptional1, IGameDataSide, IScaledSizeAbsol
     public ushort AlphaMove { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x02)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x02), value); }
     public byte HeightScalarCopy { get => Data[Offset + 0x04]; set => Data[Offset + 0x04] = value; }
 
-    public int Move1 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x05)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x05), (ushort)value); }
-    public int Move2 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x07)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x07), (ushort)value); }
-    public int Move3 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x09)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x09), (ushort)value); }
-    public int Move4 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x0B)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x0B), (ushort)value); }
+    public ushort Move1 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x05)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x05), value); }
+    public ushort Move2 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x07)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x07), value); }
+    public ushort Move3 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x09)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x09), value); }
+    public ushort Move4 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x0B)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x0B), value); }
 
     public int Move1_PP { get => Data[Offset + 0x0D]; set => Data[Offset + 0x0D] = (byte)value; }
     public int Move2_PP { get => Data[Offset + 0x0E]; set => Data[Offset + 0x0E] = (byte)value; }
     public int Move3_PP { get => Data[Offset + 0x0F]; set => Data[Offset + 0x0F] = (byte)value; }
     public int Move4_PP { get => Data[Offset + 0x10]; set => Data[Offset + 0x10] = (byte)value; }
-    public int RelearnMove1 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x11)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x11), (ushort)value); }
-    public int RelearnMove2 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x13)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x13), (ushort)value); }
-    public int RelearnMove3 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x15)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x15), (ushort)value); }
-    public int RelearnMove4 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x17)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x17), (ushort)value); }
+    public ushort RelearnMove1 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x11)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x11), value); }
+    public ushort RelearnMove2 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x13)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x13), value); }
+    public ushort RelearnMove3 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x15)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x15), value); }
+    public ushort RelearnMove4 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x17)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x17), value); }
     public byte GV_HP  { get => Data[Offset + 0x19]; set => Data[Offset + 0x19] = value; }
     public byte GV_ATK { get => Data[Offset + 0x1A]; set => Data[Offset + 0x1A] = value; }
     public byte GV_DEF { get => Data[Offset + 0x1B]; set => Data[Offset + 0x1B] = value; }
@@ -59,7 +62,7 @@ public sealed class GameDataPA8 : HomeOptional1, IGameDataSide, IScaledSizeAbsol
         FlagUtil.SetFlag(Data, Offset + 0x28 + ofs, index & 7, value);
     }
 
-    public bool GetPurchasedRecordFlagAny() => Array.FindIndex(Data, Offset + 0x28, 8, z => z != 0) >= 0;
+    public bool GetPurchasedRecordFlagAny() => Array.FindIndex(Data, Offset + 0x28, 8, static z => z != 0) >= 0;
 
     public int GetPurchasedCount()
     {
@@ -86,13 +89,13 @@ public sealed class GameDataPA8 : HomeOptional1, IGameDataSide, IScaledSizeAbsol
         FlagUtil.SetFlag(Data, Offset + 0x30 + ofs, index & 7, value);
     }
 
-    public bool GetMasteredRecordFlagAny() => Array.FindIndex(Data, Offset + 0x30, 8, z => z != 0) >= 0;
+    public bool GetMasteredRecordFlagAny() => Array.FindIndex(Data, Offset + 0x30, 8, static z => z != 0) >= 0;
 
     public int Egg_Location { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x38)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x38), (ushort)value); }
     public int Met_Location { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x3A)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x3A), (ushort)value); }
 
     // Not stored.
-    public PersonalInfo GetPersonalInfo(int species, int form) => PersonalTable.LA.GetFormEntry(species, form);
+    public PersonalInfo GetPersonalInfo(ushort species, byte form) => PersonalTable.LA.GetFormEntry(species, form);
     public int Move1_PPUps { get => 0; set { } }
     public int Move2_PPUps { get => 0; set { } }
     public int Move3_PPUps { get => 0; set { } }
@@ -108,7 +111,7 @@ public sealed class GameDataPA8 : HomeOptional1, IGameDataSide, IScaledSizeAbsol
         pk.IsAlpha = IsAlpha;
         pk.IsNoble = IsNoble;
         pk.AlphaMove = AlphaMove;
-        pk.HeightScalarCopy = HeightScalarCopy;
+        pk.Scale = HeightScalarCopy;
         pk.HeightAbsolute = pk.CalcHeightAbsolute; // Ignore the stored value, be nice and recalculate for the user.
         pk.WeightAbsolute = pk.CalcWeightAbsolute; // Ignore the stored value, be nice and recalculate for the user.
         pk.GV_HP = GV_HP;

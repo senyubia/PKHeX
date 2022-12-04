@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using static System.Buffers.Binary.BinaryPrimitives;
@@ -12,7 +12,7 @@ public sealed class SAV3RSBox : SaveFile, IGCSaveFile
 {
     protected internal override string ShortSummary => $"{Version} #{SaveCount:0000}";
     public override string Extension => this.GCExtension();
-    public override PersonalTable Personal => PersonalTable.RS;
+    public override IPersonalTable Personal => PersonalTable.RS;
     public override IReadOnlyList<ushort> HeldItems => Legal.HeldItems_RS;
     public SAV3GCMemoryCard? MemoryCard { get; init; }
     private readonly bool Japanese;
@@ -107,8 +107,8 @@ public sealed class SAV3RSBox : SaveFile, IGCSaveFile
     public override PKM BlankPKM => new PK3();
     public override Type PKMType => typeof(PK3);
 
-    public override int MaxMoveID => Legal.MaxMoveID_3;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_3;
+    public override ushort MaxMoveID => Legal.MaxMoveID_3;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_3;
     public override int MaxAbilityID => Legal.MaxAbilityID_3;
     public override int MaxItemID => Legal.MaxItemID_3;
     public override int MaxBallID => Legal.MaxBallID_3;
@@ -118,8 +118,8 @@ public sealed class SAV3RSBox : SaveFile, IGCSaveFile
     public override int Generation => 3;
     public override EntityContext Context => EntityContext.Gen3;
     protected override int GiftCountMax => 1;
-    public override int OTLength => 7;
-    public override int NickLength => 10;
+    public override int MaxStringLengthOT => 7;
+    public override int MaxStringLengthNickname => 10;
     public override int MaxMoney => 999999;
     public override bool HasBoxWallpapers => false;
 

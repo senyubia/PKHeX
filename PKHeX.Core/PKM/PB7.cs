@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using static System.Buffers.Binary.BinaryPrimitives;
@@ -62,10 +62,10 @@ public sealed class PB7 : G6PKM, IHyperTrain, IAwakened, IScaledSizeValue, IComb
         set => WriteUInt16LittleEndian(Data.AsSpan(0x06), value);
     }
 
-    public override int Species
+    public override ushort Species
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x08));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x08), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x08), value);
     }
 
     public override int HeldItem
@@ -94,7 +94,7 @@ public sealed class PB7 : G6PKM, IHyperTrain, IAwakened, IScaledSizeValue, IComb
 
     public override int Ability { get => Data[0x14]; set => Data[0x14] = (byte)value; }
     public override int AbilityNumber { get => Data[0x15] & 7; set => Data[0x15] = (byte)((Data[0x15] & ~7) | (value & 7)); }
-    public bool Favorite { get => (Data[0x15] & 8) != 0; set => Data[0x15] = (byte)((Data[0x15] & ~8) | ((value ? 1 : 0) << 3)); }
+    public bool IsFavorite { get => (Data[0x15] & 8) != 0; set => Data[0x15] = (byte)((Data[0x15] & ~8) | ((value ? 1 : 0) << 3)); }
     public override int MarkValue { get => ReadUInt16LittleEndian(Data.AsSpan(0x16)); set => WriteUInt16LittleEndian(Data.AsSpan(0x16), (ushort)value); }
 
     public override uint PID
@@ -106,7 +106,7 @@ public sealed class PB7 : G6PKM, IHyperTrain, IAwakened, IScaledSizeValue, IComb
     public override int Nature { get => Data[0x1C]; set => Data[0x1C] = (byte)value; }
     public override bool FatefulEncounter { get => (Data[0x1D] & 1) == 1; set => Data[0x1D] = (byte)((Data[0x1D] & ~0x01) | (value ? 1 : 0)); }
     public override int Gender { get => (Data[0x1D] >> 1) & 0x3; set => Data[0x1D] = (byte)((Data[0x1D] & ~0x06) | (value << 1)); }
-    public override int Form { get => Data[0x1D] >> 3; set => Data[0x1D] = (byte)((Data[0x1D] & 0x07) | (value << 3)); }
+    public override byte Form { get => (byte)(Data[0x1D] >> 3); set => Data[0x1D] = (byte)((Data[0x1D] & 0x07) | (value << 3)); }
     public override int EV_HP { get => Data[0x1E]; set => Data[0x1E] = (byte)value; }
     public override int EV_ATK { get => Data[0x1F]; set => Data[0x1F] = (byte)value; }
     public override int EV_DEF { get => Data[0x20]; set => Data[0x20] = (byte)value; }
@@ -141,28 +141,28 @@ public sealed class PB7 : G6PKM, IHyperTrain, IAwakened, IScaledSizeValue, IComb
         set => StringConverter8.SetString(Nickname_Trash, value.AsSpan(), 12, StringConverterOption.None);
     }
 
-    public override int Move1
+    public override ushort Move1
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x5A));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x5A), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x5A), value);
     }
 
-    public override int Move2
+    public override ushort Move2
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x5C));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x5C), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x5C), value);
     }
 
-    public override int Move3
+    public override ushort Move3
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x5E));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x5E), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x5E), value);
     }
 
-    public override int Move4
+    public override ushort Move4
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x60));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x60), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x60), value);
     }
 
     public override int Move1_PP { get => Data[0x62]; set => Data[0x62] = (byte)value; }
@@ -174,28 +174,28 @@ public sealed class PB7 : G6PKM, IHyperTrain, IAwakened, IScaledSizeValue, IComb
     public override int Move3_PPUps { get => Data[0x68]; set => Data[0x68] = (byte)value; }
     public override int Move4_PPUps { get => Data[0x69]; set => Data[0x69] = (byte)value; }
 
-    public override int RelearnMove1
+    public override ushort RelearnMove1
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x6A));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x6A), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x6A), value);
     }
 
-    public override int RelearnMove2
+    public override ushort RelearnMove2
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x6C));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x6C), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x6C), value);
     }
 
-    public override int RelearnMove3
+    public override ushort RelearnMove3
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x6E));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x6E), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x6E), value);
     }
 
-    public override int RelearnMove4
+    public override ushort RelearnMove4
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x70));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x70), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x70), value);
     }
 
     // 0x72 Unused
@@ -351,14 +351,14 @@ public sealed class PB7 : G6PKM, IHyperTrain, IAwakened, IScaledSizeValue, IComb
     }
 
     // Maximums
-    public override int MaxMoveID => Legal.MaxMoveID_7b;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_7b;
+    public override ushort MaxMoveID => Legal.MaxMoveID_7b;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_7b;
     public override int MaxAbilityID => Legal.MaxAbilityID_7_USUM;
     public override int MaxItemID => Legal.MaxItemID_7_USUM;
     public override int MaxBallID => Legal.MaxBallID_7;
     public override int MaxGameID => Legal.MaxGameID_7b;
 
-    public override void LoadStats(PersonalInfo p, Span<ushort> stats)
+    public override void LoadStats(IBaseStat p, Span<ushort> stats)
     {
         int level = CurrentLevel;
         int nature = Nature;
@@ -505,9 +505,6 @@ public sealed class PB7 : G6PKM, IHyperTrain, IAwakened, IScaledSizeValue, IComb
         ResetWeight();
     }
 
-    // Casts are as per the game code; they may seem redundant but every bit of precision matters?
-    // This still doesn't precisely match :( -- just use a tolerance check when updating.
-    // If anyone can figure out how to get all precision to match, feel free to update :)
     public float HeightRatio => GetHeightRatio(HeightScalar);
     public float WeightRatio => GetWeightRatio(WeightScalar);
 
@@ -538,14 +535,14 @@ public sealed class PB7 : G6PKM, IHyperTrain, IAwakened, IScaledSizeValue, IComb
     }
 
     [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-    public static float GetHeightAbsolute(PersonalInfo p, int heightScalar)
+    public static float GetHeightAbsolute(IPersonalMisc p, int heightScalar)
     {
         float HeightRatio = GetHeightRatio(heightScalar);
         return HeightRatio * p.Height;
     }
 
     [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-    public static float GetWeightAbsolute(PersonalInfo p, int heightScalar, int weightScalar)
+    public static float GetWeightAbsolute(IPersonalMisc p, int heightScalar, int weightScalar)
     {
         float HeightRatio = GetHeightRatio(heightScalar);
         float WeightRatio = GetWeightRatio(weightScalar);
@@ -584,6 +581,31 @@ public sealed class PB7 : G6PKM, IHyperTrain, IAwakened, IScaledSizeValue, IComb
         int unsigned = value & ~(value >> 31);
         return (byte)Math.Min(255, unsigned);
     }
+
+    public static int GetRandomIndex(int bits, int characterIndex, int nature)
+    {
+        if (bits is 6 or 7)
+            return GetRandomIndex(characterIndex);
+        if (bits is 0)
+            return 0;
+        Span<sbyte> amps = NatureAmpTable.AsSpan(5 * nature, 5);
+        if (amps[bits - 1] != -1) // not a negative stat
+            return bits;
+
+        // remap a negative stat to positive
+        return 1 + amps.IndexOf((sbyte)1);
+    }
+
+    private static int GetRandomIndex(int characterIndex) => (characterIndex / 5) switch
+    {
+        0 => 0,
+        1 => 1,
+        2 => 2,
+        3 => 5,
+        4 => 3,
+        5 => 4,
+        _ => throw new ArgumentOutOfRangeException(nameof(characterIndex)), // never happens, characteristic is always 0-29
+    };
 
     public PK8 ConvertToPK8()
     {
@@ -648,7 +670,7 @@ public sealed class PB7 : G6PKM, IHyperTrain, IAwakened, IScaledSizeValue, IComb
             HeightScalar = HeightScalar,
             WeightScalar = WeightScalar,
 
-            Favorite = Favorite,
+            IsFavorite = IsFavorite,
         };
 
         // Fix PP and Stats

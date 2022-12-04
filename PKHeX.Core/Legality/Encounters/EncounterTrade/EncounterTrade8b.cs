@@ -1,12 +1,13 @@
-﻿namespace PKHeX.Core;
+namespace PKHeX.Core;
 
 /// <summary>
 /// Generation 7 Trade Encounter
 /// </summary>
 /// <inheritdoc cref="EncounterTrade"/>
-public sealed record EncounterTrade8b : EncounterTrade, IContestStats, IScaledSize, IFixedOTFriendship
+public sealed record EncounterTrade8b : EncounterTrade, IContestStatsReadOnly, IScaledSizeReadOnly, IFixedOTFriendship
 {
     public override int Generation => 8;
+    public override EntityContext Context => EntityContext.Gen8b;
     public override int Location => Locations.LinkTrade6NPC;
 
     public EncounterTrade8b(GameVersion game) : base(game) => EggLocation = Locations.Default8bNone;
@@ -16,8 +17,8 @@ public sealed record EncounterTrade8b : EncounterTrade, IContestStats, IScaledSi
     public byte CNT_Smart => BaseContest;
     public byte CNT_Tough => BaseContest;
     public byte CNT_Sheen => 0;
-    public byte HeightScalar { get; set; }
-    public byte WeightScalar { get; set; }
+    public byte HeightScalar { get; init; }
+    public byte WeightScalar { get; init; }
     public byte OT_Friendship => Species == (int)Core.Species.Chatot ? (byte)35 : (byte)50;
     private byte BaseContest => Species == (int)Core.Species.Chatot ? (byte)20 : (byte)0;
     public uint PID { get; init; }
@@ -29,7 +30,7 @@ public sealed record EncounterTrade8b : EncounterTrade, IContestStats, IScaledSi
             return false;
         if (pk.PID != PID)
             return false;
-        if (pk is IContestStats s && s.IsContestBelow(this))
+        if (pk is IContestStatsReadOnly s && s.IsContestBelow(this))
             return false;
         if (pk is IScaledSize h && h.HeightScalar != HeightScalar)
             return false;

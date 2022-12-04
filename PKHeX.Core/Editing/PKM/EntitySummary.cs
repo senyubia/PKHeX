@@ -26,7 +26,7 @@ public class EntitySummary // do NOT seal, allow inheritance
     public string Move2 => Get(Strings.movelist, pk.Move2);
     public string Move3 => Get(Strings.movelist, pk.Move3);
     public string Move4 => Get(Strings.movelist, pk.Move4);
-    public string HeldItem => GetSpan(Strings.GetItemStrings(pk.Format), pk.HeldItem);
+    public string HeldItem => GetSpan(Strings.GetItemStrings(pk.Context), pk.HeldItem);
     public string HP => Stats[0].ToString();
     public string ATK => Stats[1].ToString();
     public string DEF => Stats[2].ToString();
@@ -58,19 +58,19 @@ public class EntitySummary // do NOT seal, allow inheritance
     public int SPA_EV => pk.EV_SPA;
     public int SPD_EV => pk.EV_SPD;
     public int SPE_EV => pk.EV_SPE;
-    public int Cool => pk is IContestStats s ? s.CNT_Cool : 0;
-    public int Beauty => pk is IContestStats s ? s.CNT_Beauty : 0;
-    public int Cute => pk is IContestStats s ? s.CNT_Cute : 0;
-    public int Smart => pk is IContestStats s ? s.CNT_Smart : 0;
-    public int Tough => pk is IContestStats s ? s.CNT_Tough : 0;
-    public int Sheen => pk is IContestStats s ? s.CNT_Sheen : 0;
+    public int Cool => pk is IContestStatsReadOnly s ? s.CNT_Cool : 0;
+    public int Beauty => pk is IContestStatsReadOnly s ? s.CNT_Beauty : 0;
+    public int Cute => pk is IContestStatsReadOnly s ? s.CNT_Cute : 0;
+    public int Smart => pk is IContestStatsReadOnly s ? s.CNT_Smart : 0;
+    public int Tough => pk is IContestStatsReadOnly s ? s.CNT_Tough : 0;
+    public int Sheen => pk is IContestStatsReadOnly s ? s.CNT_Sheen : 0;
     public int Markings => pk.MarkValue;
 
     public string NotOT => pk.Format > 5 ? pk.HT_Name : "N/A";
 
     public int AbilityNum => pk.Format > 5 ? pk.AbilityNumber : -1;
     public int GenderFlag => pk.Gender;
-    public int Form => pk.Form;
+    public byte Form => pk.Form;
     public int PKRS_Strain => pk.PKRS_Strain;
     public int PKRS_Days => pk.PKRS_Days;
     public int MetLevel => pk.Met_Level;

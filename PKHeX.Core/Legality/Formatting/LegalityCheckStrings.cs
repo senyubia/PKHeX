@@ -1,4 +1,4 @@
-﻿// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 
 namespace PKHeX.Core;
 
@@ -40,9 +40,6 @@ public static class LegalityCheckStrings
     /// <summary>Format text for exporting the <see cref="PIDIV.Type"/> that was matched for the <see cref="PKM"/></summary>
     public static string L_FPIDType_0 { get; set; } = "PID Type: {0}";
 
-    /// <summary>Severity string for <see cref="Severity.Indeterminate"/></summary>
-    public static string L_SIndeterminate { get; set; } = "Indeterminate";
-
     /// <summary>Severity string for <see cref="Severity.Invalid"/></summary>
     public static string L_SInvalid { get; set; } = "Invalid";
 
@@ -62,9 +59,11 @@ public static class LegalityCheckStrings
     public static string L_XEnigmaBerry_0 { get; set; } = "{0} Berry";
     public static string L_XMatches0_1 { get; set; } = "Matches: {0} {1}";
     public static string L_XWurmpleEvo_0 { get; set; } = "Wurmple Evolution: {0}";
+    public static string L_XRareFormEvo_0_1 { get; set; } = "Evolves into form: {0} (rare: {1})";
 
     public static string LAbilityCapsuleUsed { get; set; } = "Ability available with Ability Capsule.";
     public static string LAbilityPatchUsed { get; set; } = "Ability available with Ability Patch.";
+    public static string LAbilityPatchRevertUsed { get; set; } = "Ability available with Ability Patch Revert.";
     public static string LAbilityFlag { get; set; } = "Ability matches ability number.";
     public static string LAbilityHiddenFail { get; set; } = "Hidden Ability mismatch for encounter type.";
     public static string LAbilityHiddenUnavailable { get; set; } = "Hidden Ability not available.";
@@ -79,8 +78,7 @@ public static class LegalityCheckStrings
     public static string LAbilityUnexpected { get; set; } = "Ability is not valid for species/form.";
 
     public static string LAwakenedCap { get; set; } = "Individual AV cannot be greater than {0}.";
-    public static string LAwakenedShouldBeValue { get; set; } = "Individual AV should be greater than {0}.";
-    public static string LAwakenedEXPIncreased { get; set; } = "All AVs are zero, but leveled above Met Level.";
+    public static string LAwakenedShouldBeValue { get; set; } = "Individual AV ({1}) should be greater than {0}.";
 
     public static string LBallAbility { get; set; } = "Can't obtain Hidden Ability with Ball.";
     public static string LBallEggCherish { get; set; } = "Can't have Cherish Ball for regular Egg.";
@@ -207,6 +205,7 @@ public static class LegalityCheckStrings
     public static string LFormPikachuCosplay { get; set; } = "Only Cosplay Pikachu can have this form.";
     public static string LFormPikachuCosplayInvalid { get; set; } = "Cosplay Pikachu cannot have the default form.";
     public static string LFormPikachuEventInvalid { get; set; } = "Event Pikachu cannot have the default form.";
+    public static string LFormInvalidExpect_0 { get; set; } = "Form is invalid, expected form index {0}.";
     public static string LFormValid { get; set; } = "Form is Valid.";
     public static string LFormVivillon { get; set; } = "Valid Vivillon pattern.";
     public static string LFormVivillonEventPre { get; set; } = "Event Vivillon pattern on pre-evolution.";
@@ -269,7 +268,7 @@ public static class LegalityCheckStrings
     public static string LGeoNoCountryHT { get; set; } = "GeoLocation Memory: HT Name present but has no previous Country.";
     public static string LGeoNoRegion { get; set; } = "GeoLocation Memory: Region without Country.";
 
-    public static string LHyperBelow100 { get; set; } = "Can't Hyper Train a Pokémon that isn't level 100.";
+    public static string LHyperTooLow_0 { get; set; } = "Can't Hyper Train a Pokémon that isn't level {0}.";
     public static string LHyperPerfectAll { get; set; } = "Can't Hyper Train a Pokémon with perfect IVs.";
     public static string LHyperPerfectOne { get; set; } = "Can't Hyper Train a perfect IV.";
     public static string LHyperPerfectUnavailable { get; set; } = "Can't Hyper Train any IV(s).";
@@ -329,6 +328,8 @@ public static class LegalityCheckStrings
     public static string LMemoryStatFriendshipHT0 { get; set; } = "Untraded: Handling Trainer Friendship should be 0.";
     public static string LMemoryStatFriendshipOTBaseEvent { get; set; } = "Event OT Friendship does not match base friendship.";
 
+    public static string LMetDetailTimeOfDay { get; set; } = "Met Time of Day value is not within the expected range.";
+
     public static string LMemoryStatFullness { get; set; } = "Fullness should be {0}.";
     public static string LMemoryStatEnjoyment { get; set; } = "Enjoyment should be {0}.";
 
@@ -354,6 +355,7 @@ public static class LegalityCheckStrings
     public static string LMoveEvoFLower { get; set; } = "Incompatible evolution moves. {0} Move learned at a lower level than other {1} moves.";
     public static string LMoveFDefault_0 { get; set; } = "Default move in Generation {0}.";
     public static string LMoveFExpect_0 { get; set; } = "Expected the following Moves: {0}";
+    public static string LMoveFExpectSingle_0 { get; set; } = "Expected: {0}";
     public static string LMoveFLevelUp_0 { get; set; } = "Learned by Level-up in Generation {0}.";
     public static string LMoveFTMHM_0 { get; set; } = "Learned by TM/HM in Generation {0}.";
     public static string LMoveFTutor_0 { get; set; } = "Learned by Move Tutor in Generation {0}.";
@@ -436,8 +438,8 @@ public static class LegalityCheckStrings
 
     public static string LRibbonAllValid { get; set; } = "All ribbons accounted for.";
     public static string LRibbonEgg { get; set; } = "Can't receive Ribbon(s) as an Egg.";
-    public static string LRibbonFInvalid_0 { get; set; } = "Invalid Ribbons: {0}";
-    public static string LRibbonFMissing_0 { get; set; } = "Missing Ribbons: {0}";
+    public static string LRibbonFInvalid_0 { get; set; } = "Invalid Ribbons: ";
+    public static string LRibbonFMissing_0 { get; set; } = "Missing Ribbons: ";
     public static string LRibbonMarkingFInvalid_0 { get; set; } = "Invalid Marking: {0}";
     public static string LRibbonMarkingAffixedF_0 { get; set; } = "Invalid Affixed Ribbon/Marking: {0}";
 
@@ -464,6 +466,11 @@ public static class LegalityCheckStrings
     public static string LSuperUnavailable { get; set; } = "Super Training missions are not available in games visited.";
     public static string LSuperUnused { get; set; } = "Unused Super Training Flag is flagged.";
 
+    public static string LTeraTypeIncorrect { get; set; } = "Tera Type does not match the expected value.";
+    public static string LTeraTypeMismatch { get; set; } = "Tera Type does not match either of the default types.";
+
+    public static string LTradeNotAvailable { get; set; } = "Encounter cannot be traded to the active trainer.";
+
     public static string LTransferBad { get; set; } = "Incorrectly transferred from previous generation.";
 
     public static string LTransferCurrentHandlerInvalid { get; set; } = "Invalid Current handler value, trainer details for save file expected another value.";
@@ -481,6 +488,7 @@ public static class LegalityCheckStrings
     public static string LTransferMoveG4HM { get; set; } = "Defog and Whirlpool. One of the two moves should have been removed before transferred to Generation 5.";
     public static string LTransferMoveHM { get; set; } = "Generation {0} HM. Should have been removed before transferred to Generation {1}.";
     public static string LTransferNature { get; set; } = "Invalid Nature for transfer Experience.";
+    public static string LTransferObedienceLevel { get; set; } = "Invalid Obedience Level.";
     public static string LTransferOriginFInvalid0_1 { get; set; } = "{0} origin cannot exist in the currently loaded ({1}) save file.";
     public static string LTransferPIDECBitFlip { get; set; } = "PID should be equal to EC [with top bit flipped]!";
     public static string LTransferPIDECEquals { get; set; } = "PID should be equal to EC!";

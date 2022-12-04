@@ -20,11 +20,13 @@ public partial class SAV_MysteryGiftDB : Form
     private readonly SaveFile SAV;
     private readonly SAVEditor BoxView;
     private readonly SummaryPreviewer ShowSet = new();
+    private readonly EntityInstructionBuilder UC_Builder;
 
     public SAV_MysteryGiftDB(PKMEditor tabs, SAVEditor sav)
     {
         InitializeComponent();
-        var UC_Builder = new EntityInstructionBuilder(() => tabs.PreparePKM())
+        WinFormsUtil.TranslateInterface(this, Main.CurrentLanguage);
+        UC_Builder = new EntityInstructionBuilder(() => tabs.PreparePKM())
         {
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             Width = Tab_Advanced.Width,
@@ -32,8 +34,7 @@ public partial class SAV_MysteryGiftDB : Form
             ReadOnly = true,
         };
         Tab_Advanced.Controls.Add(UC_Builder);
-
-        WinFormsUtil.TranslateInterface(this, Main.CurrentLanguage);
+        UC_Builder.SendToBack();
 
         SAV = sav.SAV;
         BoxView = sav;
@@ -148,7 +149,7 @@ public partial class SAV_MysteryGiftDB : Form
             WinFormsUtil.Alert(MsgExportWC3DataFail);
             return;
         }
-        WinFormsUtil.ExportMGDialog(g, SAV.Version);
+        WinFormsUtil.ExportMGDialog(g);
     }
 
     private int GetSenderIndex(object sender)
@@ -223,11 +224,13 @@ public partial class SAV_MysteryGiftDB : Form
 
         if (Main.Settings.MysteryDb.FilterUnavailableSpecies)
         {
+            static bool IsPresentInGameSV  (ISpeciesForm pk) => PersonalTable.SV.  IsPresentInGame(pk.Species, pk.Form);
             static bool IsPresentInGameSWSH(ISpeciesForm pk) => PersonalTable.SWSH.IsPresentInGame(pk.Species, pk.Form);
             static bool IsPresentInGameBDSP(ISpeciesForm pk) => PersonalTable.BDSP.IsPresentInGame(pk.Species, pk.Form);
-            static bool IsPresentInGameLA(ISpeciesForm pk) => PersonalTable.LA.IsPresentInGame(pk.Species, pk.Form);
+            static bool IsPresentInGameLA  (ISpeciesForm pk) => PersonalTable.LA.  IsPresentInGame(pk.Species, pk.Form);
             db = SAV switch
             {
+                SAV9SV => db.Where(IsPresentInGameSV),
                 SAV8SWSH => db.Where(IsPresentInGameSWSH),
                 SAV8BS => db.Where(IsPresentInGameBDSP),
                 SAV8LA => db.Where(IsPresentInGameLA),
@@ -301,7 +304,7 @@ public partial class SAV_MysteryGiftDB : Form
         }
 
         // Primary Searchables
-        int species = WinFormsUtil.GetIndex(CB_Species);
+        var species = WinFormsUtil.GetIndex(CB_Species);
         int item = WinFormsUtil.GetIndex(CB_HeldItem);
         if (species != -1) res = res.Where(pk => pk.Species == species);
         if (item != -1) res = res.Where(pk => pk.HeldItem == item);
@@ -311,10 +314,10 @@ public partial class SAV_MysteryGiftDB : Form
         int move2 = WinFormsUtil.GetIndex(CB_Move2);
         int move3 = WinFormsUtil.GetIndex(CB_Move3);
         int move4 = WinFormsUtil.GetIndex(CB_Move4);
-        if (move1 != -1) res = res.Where(mg => mg.HasMove(move1));
-        if (move2 != -1) res = res.Where(mg => mg.HasMove(move2));
-        if (move3 != -1) res = res.Where(mg => mg.HasMove(move3));
-        if (move4 != -1) res = res.Where(mg => mg.HasMove(move4));
+        if (move1 != -1) res = res.Where(mg => mg.HasMove((ushort)move1));
+        if (move2 != -1) res = res.Where(mg => mg.HasMove((ushort)move2));
+        if (move3 != -1) res = res.Where(mg => mg.HasMove((ushort)move3));
+        if (move4 != -1) res = res.Where(mg => mg.HasMove((ushort)move4));
 
         var shiny = CHK_Shiny.CheckState;
         if (shiny == CheckState.Checked) res = res.Where(pk => pk.IsShiny);
@@ -439,5 +442,17 @@ public partial class SAV_MysteryGiftDB : Form
             return;
 
         ShowSet.Show(pb, Results[index]);
+    }
+
+    private void B_Add_Click(object sender, EventArgs e)
+    {
+        var s = UC_Builder.Create();
+        if (s.Length == 0)
+        { WinFormsUtil.Alert(MsgBEPropertyInvalid); return; }
+
+        if (RTB_Instructions.Lines.Length != 0 && RTB_Instructions.Lines[^1].Length > 0)
+            s = Environment.NewLine + s;
+
+        RTB_Instructions.AppendText(s);
     }
 }

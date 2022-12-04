@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 
 namespace PKHeX.Core;
 
@@ -86,30 +85,6 @@ public static partial class Legal
         872, 873, 874, 875, 876, 877, 878, 885, 886, 887, 888, 889, 890, 891, 892, 893, 894, 895, 896, 900, 901, 902,
     };
 
-    internal static readonly ushort[] Pouch_Regular_GG_Item =
-    {
-        076, // Super Repel
-        077, // Max Repel
-        078, // Escape Rope
-        079, // Repel
-        086, // Tiny Mushroom
-        087, // Big Mushroom
-        088, // Pearl
-        089, // Big Pearl
-        090, // Stardust
-        091, // Star Piece
-        092, // Nugget
-        093, // Heart Scale
-
-        571, // Pretty Wing
-        795, // Bottle Cap
-        796, // Gold Bottle Cap
-
-        900, // Lure
-        901, // Super Lure
-        902, // Max Lure
-    };
-
     internal static readonly ushort[] Pouch_Regular_GG_Key =
     {
         113, // Tea
@@ -151,41 +126,9 @@ public static partial class Legal
 
     #region Moves
 
-    internal static readonly int[] TMHM_GG =
-    {
-        029, 269, 270, 100, 156, 113, 182, 164, 115, 091,
-        261, 263, 280, 019, 069, 086, 525, 369, 231, 399,
-        492, 157, 009, 404, 127, 398, 092, 161, 503, 339,
-        007, 605, 347, 406, 008, 085, 053, 087, 200, 094,
-        089, 120, 247, 583, 076, 126, 057, 063, 276, 355,
-        059, 188, 072, 430, 058, 446, 006, 529, 138, 224,
-        // rest are same as SM, unused
+    public static bool IsAllowedMoveGG(ushort move) => Array.BinarySearch(AllowedMovesGG, move) >= 0;
 
-        // No HMs
-    };
-
-    internal static readonly int[] Tutor_StarterPikachu =
-    {
-        (int)Move.ZippyZap,
-        (int)Move.SplishySplash,
-        (int)Move.FloatyFall,
-        //(int)Move.PikaPapow, // Joycon Shake
-    };
-
-    internal static readonly int[] Tutor_StarterEevee =
-    {
-        (int)Move.BouncyBubble,
-        (int)Move.BuzzyBuzz,
-        (int)Move.SizzlySlide,
-        (int)Move.GlitzyGlow,
-        (int)Move.BaddyBad,
-        (int)Move.SappySeed,
-        (int)Move.FreezyFrost,
-        (int)Move.SparklySwirl,
-        //(int)Move.VeeveeVolley, // Joycon Shake
-    };
-
-    internal static readonly HashSet<short> AllowedMovesGG = new()
+    private static readonly ushort[] AllowedMovesGG =
     {
         000, 001, 002, 003, 004, 005, 006, 007, 008, 009,
         010, 011, 012, 013, 014, 015, 016, 017, 018, 019,

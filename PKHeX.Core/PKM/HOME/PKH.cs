@@ -5,14 +5,15 @@ using static PKHeX.Core.Locations;
 
 namespace PKHeX.Core;
 
-/// <summary> Generation 8 <see cref="PKM"/> format. </summary>
-public class PKH : PKM, IHandlerLanguage, IFormArgument, IHomeTrack, IBattleVersion, ITrainerMemories, IRibbonSetAffixed, IContestStats, IContestStatsMutable, IScaledSize
+/// <summary> Pokémon HOME <see cref="PKM"/> format. </summary>
+public class PKH : PKM, IHandlerLanguage, IFormArgument, IHomeTrack, IBattleVersion, ITrainerMemories, IRibbonSetAffixed, IContestStats, IScaledSize
 {
     public readonly GameDataCore _coreData;
     public GameDataPB7? DataPB7 { get; private set; }
     public GameDataPK8? DataPK8 { get; private set; }
     public GameDataPA8? DataPA8 { get; private set; }
     public GameDataPB8? DataPB8 { get; private set; }
+    public GameDataPK9? DataPK9 { get; private set; }
 
     public override EntityContext Context => EntityContext.None;
 
@@ -66,20 +67,20 @@ public class PKH : PKM, IHandlerLanguage, IFormArgument, IHomeTrack, IBattleVers
     public ulong Tracker { get => _coreData.Tracker; set => _coreData.Tracker = value; }
     public override uint EncryptionConstant { get => _coreData.EncryptionConstant; set => _coreData.EncryptionConstant = value; }
     public bool IsBadEgg { get => _coreData.IsBadEgg; set => _coreData.IsBadEgg = value; }
-    public override int Species { get => _coreData.Species; set => _coreData.Species = value; }
+    public override ushort Species { get => _coreData.Species; set => _coreData.Species = value; }
     public override int TID { get => _coreData.TID; set => _coreData.TID = value; }
     public override int SID { get => _coreData.SID; set => _coreData.SID = value; }
     public override uint EXP { get => _coreData.EXP; set => _coreData.EXP = value; }
     public override int Ability { get => _coreData.Ability; set => _coreData.Ability = value; }
     public override int AbilityNumber { get => _coreData.AbilityNumber; set => _coreData.AbilityNumber = value; }
-    public bool Favorite { get => _coreData.Favorite; set => _coreData.Favorite = value; }
+    public bool Favorite { get => _coreData.IsFavorite; set => _coreData.IsFavorite = value; }
     public override int MarkValue { get => _coreData.MarkValue; set => _coreData.MarkValue = value; }
     public override uint PID { get => _coreData.PID; set => _coreData.PID = value; }
     public override int Nature { get => _coreData.Nature; set => _coreData.Nature = value; }
     public override int StatNature { get => _coreData.StatNature; set => _coreData.StatNature = value; }
     public override bool FatefulEncounter { get => _coreData.FatefulEncounter; set => _coreData.FatefulEncounter = value; }
     public override int Gender { get => _coreData.Gender; set => _coreData.Gender = value; }
-    public override int Form { get => _coreData.Form; set => _coreData.Form = value; }
+    public override byte Form { get => _coreData.Form; set => _coreData.Form = value; }
     public override int EV_HP { get => _coreData.EV_HP; set => _coreData.EV_HP = value; }
     public override int EV_ATK { get => _coreData.EV_ATK; set => _coreData.EV_ATK = value; }
     public override int EV_DEF { get => _coreData.EV_DEF; set => _coreData.EV_DEF = value; }
@@ -183,10 +184,10 @@ public class PKH : PKM, IHandlerLanguage, IFormArgument, IHomeTrack, IBattleVers
 
     #region Children
 
-    public override int Move1       { get => LatestGameData.Move1      ; set => LatestGameData.Move1       = value; }
-    public override int Move2       { get => LatestGameData.Move2      ; set => LatestGameData.Move2       = value; }
-    public override int Move3       { get => LatestGameData.Move3      ; set => LatestGameData.Move3       = value; }
-    public override int Move4       { get => LatestGameData.Move4      ; set => LatestGameData.Move4       = value; }
+    public override ushort Move1       { get => LatestGameData.Move1      ; set => LatestGameData.Move1       = value; }
+    public override ushort Move2       { get => LatestGameData.Move2      ; set => LatestGameData.Move2       = value; }
+    public override ushort Move3       { get => LatestGameData.Move3      ; set => LatestGameData.Move3       = value; }
+    public override ushort Move4       { get => LatestGameData.Move4      ; set => LatestGameData.Move4       = value; }
     public override int Move1_PP    { get => LatestGameData.Move1_PP   ; set => LatestGameData.Move1_PP    = value; }
     public override int Move2_PP    { get => LatestGameData.Move2_PP   ; set => LatestGameData.Move2_PP    = value; }
     public override int Move3_PP    { get => LatestGameData.Move3_PP   ; set => LatestGameData.Move3_PP    = value; }
@@ -214,10 +215,10 @@ public class PKH : PKM, IHandlerLanguage, IFormArgument, IHomeTrack, IBattleVers
 
     public override int MaxIV => 31;
     public override int MaxEV => 252;
-    public override int OTLength => 12;
-    public override int NickLength => 12;
-    public override int MaxMoveID => Legal.MaxMoveID_8a;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_8a;
+    public override int MaxStringLengthOT => 12;
+    public override int MaxStringLengthNickname => 12;
+    public override ushort MaxMoveID => Legal.MaxMoveID_8a;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_8a;
     public override int MaxAbilityID => Legal.MaxAbilityID_8a;
     public override int MaxItemID => Legal.MaxItemID_8a;
     public override int MaxBallID => Legal.MaxBallID_8a;
@@ -297,7 +298,7 @@ public class PKH : PKM, IHandlerLanguage, IFormArgument, IHomeTrack, IBattleVers
         (int)GP or (int)GE => DataPB7 ??= new(),
         (int)BD or (int)SP => DataPB8 ??= new(),
         (int)PLA           => DataPA8 ??= new(),
-
+        (int)SL or (int)VL => DataPK9 ??= new(),
         _                  => DataPK8 ??= new(),
     };
 
@@ -306,10 +307,11 @@ public class PKH : PKM, IHandlerLanguage, IFormArgument, IHomeTrack, IBattleVers
         (int)GP or (int)GE => DataPB7,
         (int)BD or (int)SP => DataPB8,
         (int)PLA           => DataPA8,
+        (int)SL or (int)VL => DataPK9,
 
         (int)SW or (int)SH when DataPK8 is { Met_Location: HOME_SWLA }              => DataPA8,
         (int)SW or (int)SH when DataPK8 is { Met_Location: HOME_SWBD or HOME_SHSP } => DataPB8,
-        (int)SW or (int)SH                                                               => DataPK8,
+        (int)SW or (int)SH                                                          => DataPK8,
 
         _ => DataPK8,
     };
@@ -318,6 +320,7 @@ public class PKH : PKM, IHandlerLanguage, IFormArgument, IHomeTrack, IBattleVers
     public PK8? ConvertToPK8() => DataPK8 is { } x ? x.ConvertToPK8(this) : (DataPK8 ??= GameDataPK8.TryCreate(this))?.ConvertToPK8(this);
     public PB8? ConvertToPB8() => DataPB8 is { } x ? x.ConvertToPB8(this) : (DataPB8 ??= GameDataPB8.TryCreate(this))?.ConvertToPB8(this);
     public PA8? ConvertToPA8() => DataPA8 is { } x ? x.ConvertToPA8(this) : (DataPA8 ??= GameDataPA8.TryCreate(this))?.ConvertToPA8(this);
+    public PK9? ConvertToPK9() => DataPK9 is { } x ? x.ConvertToPK9(this) : (DataPK9 ??= GameDataPK9.TryCreate(this))?.ConvertToPK9(this);
 
     public void CopyTo(PKM pk) => _coreData.CopyTo(pk);
 }

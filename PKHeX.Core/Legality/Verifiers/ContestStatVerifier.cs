@@ -1,4 +1,4 @@
-﻿using static PKHeX.Core.ContestStatGranting;
+using static PKHeX.Core.ContestStatGranting;
 using static PKHeX.Core.ContestStatInfo;
 using static PKHeX.Core.LegalityCheckStrings;
 
@@ -13,7 +13,7 @@ public sealed class ContestStatVerifier : Verifier
     public override void Verify(LegalityAnalysis data)
     {
         var pk = data.Entity;
-        if (pk is not IContestStats s)
+        if (pk is not IContestStatsReadOnly s)
             return;
 
         // If no stats have been increased from the initial amount, then we're done here.
@@ -41,7 +41,7 @@ public sealed class ContestStatVerifier : Verifier
         else if (correlation == CorrelateSheen)
         {
             bool gen3 = data.Info.Generation == 3;
-            bool bdsp = pk.HasVisitedBDSP(data.Info.EvoChainsAllGens.Gen8b);
+            bool bdsp = data.Info.EvoChainsAllGens.HasVisitedBDSP;
             var method = gen3 ? ContestStatGrantingSheen.Gen3 :
                 bdsp ? ContestStatGrantingSheen.Gen8b : ContestStatGrantingSheen.Gen4;
 

@@ -5,8 +5,8 @@ using static System.Buffers.Binary.BinaryPrimitives;
 namespace PKHeX.Core;
 
 /// <summary> Generation 7 <see cref="PKM"/> format. </summary>
-public sealed class PK7 : G6PKM, IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetCommon3, IRibbonSetCommon4, IRibbonSetCommon6, IRibbonSetCommon7,
-    IContestStats, IContestStatsMutable, IHyperTrain, IGeoTrack, ISuperTrain, IFormArgument, ITrainerMemories, IAffection
+public sealed class PK7 : G6PKM, IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetCommon3, IRibbonSetCommon4, IRibbonSetCommon6, IRibbonSetMemory6, IRibbonSetCommon7,
+    IContestStats, IHyperTrain, IGeoTrack, ISuperTrain, IFormArgument, ITrainerMemories, IAffection
 {
     private static readonly ushort[] Unused =
     {
@@ -51,10 +51,10 @@ public sealed class PK7 : G6PKM, IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetC
         set => WriteUInt16LittleEndian(Data.AsSpan(0x06), value);
     }
 
-    public override int Species
+    public override ushort Species
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x08));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x08), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x08), value);
     }
 
     public override int HeldItem
@@ -94,7 +94,7 @@ public sealed class PK7 : G6PKM, IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetC
     public override int Nature { get => Data[0x1C]; set => Data[0x1C] = (byte)value; }
     public override bool FatefulEncounter { get => (Data[0x1D] & 1) == 1; set => Data[0x1D] = (byte)((Data[0x1D] & ~0x01) | (value ? 1 : 0)); }
     public override int Gender { get => (Data[0x1D] >> 1) & 0x3; set => Data[0x1D] = (byte)((Data[0x1D] & ~0x06) | (value << 1)); }
-    public override int Form { get => Data[0x1D] >> 3; set => Data[0x1D] = (byte)((Data[0x1D] & 0x07) | (value << 3)); }
+    public override byte Form { get => (byte)(Data[0x1D] >> 3); set => Data[0x1D] = (byte)((Data[0x1D] & 0x07) | (value << 3)); }
     public override int EV_HP { get => Data[0x1E]; set => Data[0x1E] = (byte)value; }
     public override int EV_ATK { get => Data[0x1F]; set => Data[0x1F] = (byte)value; }
     public override int EV_DEF { get => Data[0x20]; set => Data[0x20] = (byte)value; }
@@ -212,8 +212,8 @@ public sealed class PK7 : G6PKM, IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetC
     public bool RIB6_5                      { get => (RIB6 & (1 << 5)) == 1 << 5; set => RIB6 = (byte)((RIB6 & ~(1 << 5)) | (value ? 1 << 5 : 0)); } // Unused
     public bool RIB6_6                      { get => (RIB6 & (1 << 6)) == 1 << 6; set => RIB6 = (byte)((RIB6 & ~(1 << 6)) | (value ? 1 << 6 : 0)); } // Unused
     public bool RIB6_7                      { get => (RIB6 & (1 << 7)) == 1 << 7; set => RIB6 = (byte)((RIB6 & ~(1 << 7)) | (value ? 1 << 7 : 0)); } // Unused
-    public int RibbonCountMemoryContest { get => Data[0x38]; set => HasContestMemoryRibbon = (Data[0x38] = (byte)value) != 0; }
-    public int RibbonCountMemoryBattle { get => Data[0x39]; set => HasBattleMemoryRibbon = (Data[0x39] = (byte)value) != 0; }
+    public byte RibbonCountMemoryContest { get => Data[0x38]; set => Data[0x38] = value; }
+    public byte RibbonCountMemoryBattle  { get => Data[0x39]; set => Data[0x39] = value; }
     private ushort DistByte { get => ReadUInt16LittleEndian(Data.AsSpan(0x3A)); set => WriteUInt16LittleEndian(Data.AsSpan(0x3A), value); }
     public bool DistSuperTrain1 { get => (DistByte & (1 << 0)) == 1 << 0; set => DistByte = (byte)((DistByte & ~(1 << 0)) | (value ? 1 << 0 : 0)); }
     public bool DistSuperTrain2 { get => (DistByte & (1 << 1)) == 1 << 1; set => DistByte = (byte)((DistByte & ~(1 << 1)) | (value ? 1 << 1 : 0)); }
@@ -247,28 +247,28 @@ public sealed class PK7 : G6PKM, IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetC
         }
     }
 
-    public override int Move1
+    public override ushort Move1
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x5A));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x5A), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x5A), value);
     }
 
-    public override int Move2
+    public override ushort Move2
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x5C));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x5C), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x5C), value);
     }
 
-    public override int Move3
+    public override ushort Move3
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x5E));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x5E), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x5E), value);
     }
 
-    public override int Move4
+    public override ushort Move4
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x60));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x60), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x60), value);
     }
 
     public override int Move1_PP { get => Data[0x62]; set => Data[0x62] = (byte)value; }
@@ -280,28 +280,28 @@ public sealed class PK7 : G6PKM, IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetC
     public override int Move3_PPUps { get => Data[0x68]; set => Data[0x68] = (byte)value; }
     public override int Move4_PPUps { get => Data[0x69]; set => Data[0x69] = (byte)value; }
 
-    public override int RelearnMove1
+    public override ushort RelearnMove1
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x6A));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x6A), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x6A), value);
     }
 
-    public override int RelearnMove2
+    public override ushort RelearnMove2
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x6C));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x6C), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x6C), value);
     }
 
-    public override int RelearnMove3
+    public override ushort RelearnMove3
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x6E));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x6E), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x6E), value);
     }
 
-    public override int RelearnMove4
+    public override ushort RelearnMove4
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x70));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x70), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x70), value);
     }
 
     public bool SecretSuperTrainingUnlocked { get => (Data[0x72] & 1) == 1; set => Data[0x72] = (byte)((Data[0x72] & ~1) | (value ? 1 : 0)); }
@@ -410,8 +410,8 @@ public sealed class PK7 : G6PKM, IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetC
     public int SuperTrainingMedalCount(int maxCount = 30)
     {
         uint value = SuperTrainBitFlags >> 2;
-#if NET5
-            return System.Numerics.BitOperations.PopCount(value);
+#if NET6_0_OR_GREATER
+        return System.Numerics.BitOperations.PopCount(value);
 #else
         int TrainCount = 0;
         for (int i = 0; i < maxCount; i++)
@@ -500,8 +500,8 @@ public sealed class PK7 : G6PKM, IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetC
     }
 
     // Maximums
-    public override int MaxMoveID => Legal.MaxMoveID_7_USUM;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_7_USUM;
+    public override ushort MaxMoveID => Legal.MaxMoveID_7_USUM;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_7_USUM;
     public override int MaxAbilityID => Legal.MaxAbilityID_7_USUM;
     public override int MaxItemID => Legal.MaxItemID_7_USUM;
     public override int MaxBallID => Legal.MaxBallID_7;
@@ -648,8 +648,9 @@ public sealed class PK7 : G6PKM, IRibbonSetEvent3, IRibbonSetEvent4, IRibbonSetC
         };
 
         // Wipe Totem Forms
-        if (FormInfo.IsTotemForm(Species, Form))
-            pk8.Form = FormInfo.GetTotemBaseForm(Species, Form);
+        var species = Species;
+        if (FormInfo.IsTotemForm(species, Form))
+            pk8.Form = FormInfo.GetTotemBaseForm(species, Form);
 
         // Fix PP and Stats
         pk8.Heal();

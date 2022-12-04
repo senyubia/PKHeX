@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 
 namespace PKHeX.Core;
 
@@ -12,6 +12,7 @@ namespace PKHeX.Core;
 public sealed record EncounterTrade1 : EncounterTradeGB
 {
     public override int Generation => 1;
+    public override EntityContext Context => EntityContext.Gen1;
     public override byte LevelMin => CanObtainMinGSC() ? LevelMinGSC : LevelMinRBY;
 
     private readonly byte LevelMinRBY;
@@ -19,7 +20,7 @@ public sealed record EncounterTrade1 : EncounterTradeGB
     public override int Location => 0;
     public override Shiny Shiny => Shiny.Random;
 
-    public EncounterTrade1(int species, GameVersion game, byte rby, byte gsc) : base(species, gsc, game)
+    public EncounterTrade1(ushort species, GameVersion game, byte rby, byte gsc) : base(species, gsc, game)
     {
         TrainerNames = StringConverter12.G1TradeOTName;
 
@@ -27,7 +28,7 @@ public sealed record EncounterTrade1 : EncounterTradeGB
         LevelMinGSC = gsc;
     }
 
-    public EncounterTrade1(int species, GameVersion game, byte rby) : this(species, game, rby, rby) { }
+    public EncounterTrade1(ushort species, GameVersion game, byte rby) : this(species, game, rby, rby) { }
 
     public byte GetInitialCatchRate()
     {

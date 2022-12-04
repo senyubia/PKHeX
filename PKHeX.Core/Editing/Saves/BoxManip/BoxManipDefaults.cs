@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using PKHeX.Core.Searching;
 using static PKHeX.Core.BoxManipType;
 
@@ -20,7 +20,7 @@ public static class BoxManipDefaults
         new BoxManipSort(SortLevelReverse, EntitySorting.OrderByDescendingLevel),
         new BoxManipSort(SortDate, EntitySorting.OrderByDateObtained, s => s.Generation >= 4),
         new BoxManipSort(SortName, list => list.OrderBySpeciesName(GameInfo.Strings.Species)),
-        new BoxManipSort(SortFavorite, list => list.OrderByCustom(pk => pk is IFavorite {Favorite: true}), s => s.BlankPKM is IFavorite),
+        new BoxManipSort(SortFavorite, list => list.OrderByCustom(pk => pk is IFavorite {IsFavorite: true}), s => s.BlankPKM is IFavorite),
         new BoxManipSortComplex(SortParty, (list, sav, start) => list.BubbleUp(sav, i => ((SAV7b)sav).Blocks.Storage.IsParty(i), start), s => s is SAV7b),
         new BoxManipSort(SortShiny, list => list.OrderByCustom(pk => !pk.IsShiny)),
         new BoxManipSort(SortRandom, list => list.OrderByCustom(_ => Util.Rand32())),
@@ -36,9 +36,11 @@ public static class BoxManipDefaults
         new BoxManipSort(SortTraining, list => list.OrderByCustom(pk => (pk.MaxEV * 6) - pk.EVTotal)),
         new BoxManipSortComplex(SortOwner, (list, sav) => list.OrderByOwnership(sav)),
         new BoxManipSort(SortType, list => list.OrderByCustom(pk => pk.PersonalInfo.Type1, pk => pk.PersonalInfo.Type2)),
+        new BoxManipSort(SortTypeTera, list => list.OrderByCustom(pk => ((ITeraTypeReadOnly)pk).TeraType, pk => pk is ITeraTypeReadOnly)),
         new BoxManipSort(SortVersion, list => list.OrderByCustom(pk => pk.Generation, pk => pk.Version, pk => pk.Met_Location), s => s.Generation >= 3),
-        new BoxManipSort(SortBST, list => list.OrderByCustom(pk => pk.PersonalInfo.BST)),
+        new BoxManipSort(SortBST, list => list.OrderByCustom(pk => pk.PersonalInfo.GetBaseStatTotal())),
         new BoxManipSort(SortCP, list => list.OrderByCustom(pk => pk is PB7 pb7 ? pb7.Stat_CP : 0), s => s is SAV7b),
+        new BoxManipSort(SortScale, list => list.OrderByCustom(pk => pk is IScaledSize3 s3 ? s3.Scale : -1), s => s.BlankPKM is IScaledSize3),
         new BoxManipSort(SortLegal, list => list.OrderByCustom(pk => !new LegalityAnalysis(pk).Valid)),
         new BoxManipSort(SortEncounterType, list => list.OrderByCustom(pk => new LegalityAnalysis(pk).Info.EncounterMatch.LongName)),
     };
@@ -62,17 +64,17 @@ public static class BoxManipDefaults
     /// <summary>
     /// Common modifying actions.
     /// </summary>
-    public static readonly IReadOnlyList<BoxManipModify> ModifyCommon = new List<BoxManipModify>
+    public static readonly IReadOnlyList<BoxManipBase> ModifyCommon = new List<BoxManipBase>
     {
-        new(ModifyHatchEggs, pk => pk.ForceHatchPKM(), s => s.Generation >= 2 && s is not SAV8LA),
-        new(ModifyMaxFriendship, pk => pk.MaximizeFriendship()),
-        new(ModifyMaxLevel, pk => pk.MaximizeLevel()),
-        new(ModifyResetMoves, pk => pk.SetMoves(pk.GetMoveSet()), s => s.Generation >= 3),
-        new(ModifyRandomMoves, pk => pk.SetMoves(pk.GetMoveSet(true))),
-        new(ModifyHyperTrain,pk => pk.SetSuggestedHyperTrainingData(), s => s.Generation >= 7 && s is not SAV8LA),
-        new(ModifyGanbaru,pk => ((IGanbaru)pk).SetSuggestedGanbaruValues(pk), s => s is SAV8LA),
-        new(ModifyRemoveNicknames, pk => pk.SetDefaultNickname()),
-        new(ModifyRemoveItem, pk => pk.HeldItem = 0, s => s.Generation >= 2),
-        new(ModifyHeal, pk => pk.Heal(), s => s.Generation >= 6), // HP stored in box, or official code has bugged transfer PP the user would like to rectify.
+        new BoxManipModifyComplex(ModifyHatchEggs, (pk, sav) => pk.ForceHatchPKM(sav), s => s.Generation >= 2 && s is not SAV8LA),
+        new BoxManipModify(ModifyMaxFriendship, pk => pk.MaximizeFriendship()),
+        new BoxManipModify(ModifyMaxLevel, pk => pk.MaximizeLevel()),
+        new BoxManipModify(ModifyResetMoves, pk => pk.SetMoves(pk.GetMoveSet()), s => s.Generation >= 3),
+        new BoxManipModify(ModifyRandomMoves, pk => pk.SetMoves(pk.GetMoveSet(true))),
+        new BoxManipModify(ModifyHyperTrain,pk => pk.SetSuggestedHyperTrainingData(), s => s.Generation >= 7 && s is not SAV8LA),
+        new BoxManipModify(ModifyGanbaru,pk => ((IGanbaru)pk).SetSuggestedGanbaruValues(pk), s => s is SAV8LA),
+        new BoxManipModify(ModifyRemoveNicknames, pk => pk.SetDefaultNickname()),
+        new BoxManipModify(ModifyRemoveItem, pk => pk.HeldItem = 0, s => s.Generation >= 2),
+        new BoxManipModify(ModifyHeal, pk => pk.Heal(), s => s.Generation >= 6), // HP stored in box, or official code has bugged transfer PP the user would like to rectify.
     };
 }

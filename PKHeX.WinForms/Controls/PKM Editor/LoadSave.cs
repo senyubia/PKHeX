@@ -30,14 +30,14 @@ public partial class PKMEditor
                 pk.CurrentLevel = 100;
         }
 
-        CB_Species.SelectedValue = pk.Species;
+        CB_Species.SelectedValue = (int)pk.Species;
         TB_Level.Text = pk.Stat_Level.ToString();
         TB_EXP.Text = pk.EXP.ToString();
     }
 
     private void SaveSpeciesLevelEXP(PKM pk)
     {
-        pk.Species = WinFormsUtil.GetIndex(CB_Species);
+        pk.Species = (ushort)WinFormsUtil.GetIndex(CB_Species);
         pk.EXP = Util.ToUInt32(TB_EXP.Text);
         pk.Stat_Level = Util.ToInt32(TB_Level.Text);
     }
@@ -98,10 +98,10 @@ public partial class PKMEditor
 
     private void LoadMoves(PKM pk)
     {
-        CB_Move1.SelectedValue = pk.Move1;
-        CB_Move2.SelectedValue = pk.Move2;
-        CB_Move3.SelectedValue = pk.Move3;
-        CB_Move4.SelectedValue = pk.Move4;
+        CB_Move1.SelectedValue = (int)pk.Move1;
+        CB_Move2.SelectedValue = (int)pk.Move2;
+        CB_Move3.SelectedValue = (int)pk.Move3;
+        CB_Move4.SelectedValue = (int)pk.Move4;
         LoadClamp(CB_PPu1, pk.Move1_PPUps);
         LoadClamp(CB_PPu2, pk.Move2_PPUps);
         LoadClamp(CB_PPu3, pk.Move3_PPUps);
@@ -114,10 +114,10 @@ public partial class PKMEditor
 
     private void SaveMoves(PKM pk)
     {
-        pk.Move1 = WinFormsUtil.GetIndex(CB_Move1);
-        pk.Move2 = WinFormsUtil.GetIndex(CB_Move2);
-        pk.Move3 = WinFormsUtil.GetIndex(CB_Move3);
-        pk.Move4 = WinFormsUtil.GetIndex(CB_Move4);
+        pk.Move1 = (ushort)WinFormsUtil.GetIndex(CB_Move1);
+        pk.Move2 = (ushort)WinFormsUtil.GetIndex(CB_Move2);
+        pk.Move3 = (ushort)WinFormsUtil.GetIndex(CB_Move3);
+        pk.Move4 = (ushort)WinFormsUtil.GetIndex(CB_Move4);
         pk.Move1_PP = WinFormsUtil.GetIndex(CB_Move1) > 0 ? Util.ToInt32(TB_PP1.Text) : 0;
         pk.Move2_PP = WinFormsUtil.GetIndex(CB_Move2) > 0 ? Util.ToInt32(TB_PP2.Text) : 0;
         pk.Move3_PP = WinFormsUtil.GetIndex(CB_Move3) > 0 ? Util.ToInt32(TB_PP3.Text) : 0;
@@ -128,7 +128,7 @@ public partial class PKMEditor
         pk.Move4_PPUps = WinFormsUtil.GetIndex(CB_Move4) > 0 ? CB_PPu4.SelectedIndex : 0;
     }
 
-    private void LoadShadow3(IShadowPKM pk)
+    private void LoadShadow3(IShadowCapture pk)
     {
         NUD_ShadowID.Value = pk.ShadowID;
         FLP_Purification.Visible = pk.ShadowID > 0;
@@ -151,7 +151,7 @@ public partial class PKMEditor
         }
     }
 
-    private void SaveShadow3(IShadowPKM pk)
+    private void SaveShadow3(IShadowCapture pk)
     {
         pk.ShadowID = (ushort)NUD_ShadowID.Value;
         if (pk.ShadowID > 0)
@@ -160,18 +160,18 @@ public partial class PKMEditor
 
     private void LoadRelearnMoves(PKM pk)
     {
-        CB_RelearnMove1.SelectedValue = pk.RelearnMove1;
-        CB_RelearnMove2.SelectedValue = pk.RelearnMove2;
-        CB_RelearnMove3.SelectedValue = pk.RelearnMove3;
-        CB_RelearnMove4.SelectedValue = pk.RelearnMove4;
+        CB_RelearnMove1.SelectedValue = (int)pk.RelearnMove1;
+        CB_RelearnMove2.SelectedValue = (int)pk.RelearnMove2;
+        CB_RelearnMove3.SelectedValue = (int)pk.RelearnMove3;
+        CB_RelearnMove4.SelectedValue = (int)pk.RelearnMove4;
     }
 
     private void SaveRelearnMoves(PKM pk)
     {
-        pk.RelearnMove1 = WinFormsUtil.GetIndex(CB_RelearnMove1);
-        pk.RelearnMove2 = WinFormsUtil.GetIndex(CB_RelearnMove2);
-        pk.RelearnMove3 = WinFormsUtil.GetIndex(CB_RelearnMove3);
-        pk.RelearnMove4 = WinFormsUtil.GetIndex(CB_RelearnMove4);
+        pk.RelearnMove1 = (ushort)WinFormsUtil.GetIndex(CB_RelearnMove1);
+        pk.RelearnMove2 = (ushort)WinFormsUtil.GetIndex(CB_RelearnMove2);
+        pk.RelearnMove3 = (ushort)WinFormsUtil.GetIndex(CB_RelearnMove3);
+        pk.RelearnMove4 = (ushort)WinFormsUtil.GetIndex(CB_RelearnMove4);
     }
 
     private void LoadMisc1(PKM pk)
@@ -199,7 +199,7 @@ public partial class PKMEditor
         CB_HeldItem.SelectedValue = pk.HeldItem;
         LoadClamp(CB_Form, pk.Form);
         if (pk is IFormArgument f)
-            FA_Form.LoadArgument(f, pk.Species, pk.Form, pk.Format);
+            L_FormArgument.Visible = FA_Form.LoadArgument(f, pk.Species, pk.Form, pk.Format);
 
         ReloadToFriendshipTextBox(pk);
 
@@ -219,7 +219,7 @@ public partial class PKMEditor
         SavePKRS(pk);
         pk.IsEgg = CHK_IsEgg.Checked;
         pk.HeldItem = WinFormsUtil.GetIndex(CB_HeldItem);
-        pk.Form = CB_Form.Enabled ? CB_Form.SelectedIndex & 0x1F : 0;
+        pk.Form = (byte)(CB_Form.Enabled ? CB_Form.SelectedIndex & 0x1F : 0);
         if (Entity is IFormArgument f)
             FA_Form.SaveArgument(f);
 
@@ -247,7 +247,7 @@ public partial class PKMEditor
         TB_MetLevel.Text = pk.Met_Level.ToString();
         CHK_Fateful.Checked = pk.FatefulEncounter;
 
-        if (pk is IContestStats s)
+        if (pk is IContestStatsReadOnly s)
             s.CopyContestStatsTo(Contest);
 
         TID_Trainer.LoadIDValues(pk);
@@ -264,7 +264,7 @@ public partial class PKMEditor
         pk.Nature = WinFormsUtil.GetIndex(CB_Nature);
         pk.Gender = UC_Gender.Gender;
 
-        if (pk is IContestStatsMutable s)
+        if (pk is IContestStats s)
             Contest.CopyContestStatsTo(s);
 
         pk.FatefulEncounter = CHK_Fateful.Checked;
@@ -405,14 +405,14 @@ public partial class PKMEditor
     private static int GetAbilityIndex4(PKM pk)
     {
         var pi = pk.PersonalInfo;
-        int abilityIndex = pi.GetAbilityIndex(pk.Ability);
+        int abilityIndex = pi.GetIndexOfAbility(pk.Ability);
         if (abilityIndex < 0)
             return 0;
         if (abilityIndex >= 2)
             return 2;
 
-        var abils = pi.Abilities;
-        if (abils[0] == abils[1])
+        var abils = (IPersonalAbility12)pi;
+        if (abils.GetIsAbility12Same())
             return pk.PIDAbility;
         return abilityIndex;
     }
@@ -478,5 +478,26 @@ public partial class PKMEditor
         pk8.IsAlpha = Stats.CHK_IsAlpha.Checked;
         pk8.IsNoble = Stats.CHK_IsNoble.Checked;
         pk8.AlphaMove = (ushort)WinFormsUtil.GetIndex(CB_AlphaMastered);
+    }
+
+    private void LoadMisc9(PK9 pk9)
+    {
+        CB_StatNature.SelectedValue = pk9.StatNature;
+        CB_HTLanguage.SelectedValue = (int)pk9.HT_Language;
+        TB_HomeTracker.Text = pk9.Tracker.ToString("X16");
+        CB_BattleVersion.SelectedValue = (int)pk9.BattleVersion;
+        Stats.CB_TeraTypeOriginal.SelectedValue = (int)pk9.TeraTypeOriginal;
+        Stats.CB_TeraTypeOverride.SelectedValue = (int)pk9.TeraTypeOverride;
+        TB_ObedienceLevel.Text = pk9.Obedience_Level.ToString();
+    }
+
+    private void SaveMisc9(PK9 pk9)
+    {
+        pk9.StatNature = WinFormsUtil.GetIndex(CB_StatNature);
+        pk9.HT_Language = (byte)WinFormsUtil.GetIndex(CB_HTLanguage);
+        pk9.BattleVersion = (byte)WinFormsUtil.GetIndex(CB_BattleVersion);
+        pk9.TeraTypeOriginal = (MoveType)WinFormsUtil.GetIndex(Stats.CB_TeraTypeOriginal);
+        pk9.TeraTypeOverride = (MoveType)WinFormsUtil.GetIndex(Stats.CB_TeraTypeOverride);
+        pk9.Obedience_Level = (byte)Util.ToInt32(TB_ObedienceLevel.Text);
     }
 }

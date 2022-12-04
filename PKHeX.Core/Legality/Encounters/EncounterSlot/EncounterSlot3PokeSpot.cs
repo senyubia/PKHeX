@@ -7,10 +7,11 @@ namespace PKHeX.Core;
 public sealed record EncounterSlot3PokeSpot : EncounterSlot, INumberedSlot
 {
     public override int Generation => 3;
+    public override EntityContext Context => EntityContext.Gen3;
 
     public byte SlotNumber { get; }
 
-    public EncounterSlot3PokeSpot(EncounterArea3XD area, int species, byte min, byte max, byte slot) : base(area, species, 0, min, max)
+    public EncounterSlot3PokeSpot(EncounterArea3XD area, ushort species, byte min, byte max, byte slot) : base(area, species, 0, min, max)
     {
         SlotNumber = slot;
     }

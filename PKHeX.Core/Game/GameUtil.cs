@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using static PKHeX.Core.GameVersion;
@@ -77,6 +77,9 @@ public static class GameUtil
         SW or SH => SWSH,
         BD or SP => BDSP,
         PLA => PLA,
+
+        // Gen9
+        SL or VL => SV,
         _ => Invalid,
     };
 
@@ -95,6 +98,7 @@ public static class GameUtil
         6 => AS,
         7 => UM,
         8 => SH,
+        9 => VL,
         _ => Invalid,
     };
 
@@ -114,6 +118,7 @@ public static class GameUtil
         if (Gen7.Contains(game)) return 7;
         if (Gen7b.Contains(game)) return 7;
         if (Gen8.Contains(game)) return 8;
+        if (Gen9.Contains(game)) return 9;
         return -1;
     }
 
@@ -122,7 +127,7 @@ public static class GameUtil
     /// </summary>
     /// <param name="game">Game to retrieve the generation for</param>
     /// <returns>Generation ID</returns>
-    public static int GetMaxSpeciesID(this GameVersion game)
+    public static ushort GetMaxSpeciesID(this GameVersion game)
     {
         if (Gen1.Contains(game)) return Legal.MaxSpeciesID_1;
         if (Gen2.Contains(game)) return Legal.MaxSpeciesID_2;
@@ -142,7 +147,8 @@ public static class GameUtil
         if (PLA == game) return Legal.MaxSpeciesID_8a;
         if (BDSP.Contains(game)) return Legal.MaxSpeciesID_8b;
         if (Gen8.Contains(game)) return Legal.MaxSpeciesID_8;
-        return -1;
+        if (Gen9.Contains(game)) return Legal.MaxSpeciesID_9;
+        return 0;
     }
 
     /// <summary>
@@ -203,6 +209,9 @@ public static class GameUtil
             SWSH => g2 is SW or SH,
             BDSP => g2 is BD or SP,
             Gen8 => SWSH.Contains(g2) || BDSP.Contains(g2) || PLA == g2,
+
+            SV => g2 is SL or VL,
+            Gen9 => SV.Contains(g2),
             _ => false,
         };
     }
@@ -226,13 +235,16 @@ public static class GameUtil
     /// <param name="generation">Generation format minimum (necessary for the CXD/Gen4 swap etc)</param>
     public static IEnumerable<GameVersion> GetVersionsWithinRange(IGameValueLimit obj, int generation = -1)
     {
-        if (obj.MaxGameID == Legal.MaxGameID_7b) // edge case
+        var max = obj.MaxGameID;
+        if (max == Legal.MaxGameID_7b) // edge case
             return new[] {GO, GP, GE};
+        if (max == Legal.MaxGameID_8)
+            max = Legal.MaxGameID_8a;
         var versions = GameVersions
-            .Where(version => (GameVersion)obj.MinGameID <= version && version <= (GameVersion)obj.MaxGameID);
+            .Where(version => (GameVersion)obj.MinGameID <= version && version <= (GameVersion)max);
         if (generation < 0)
             return versions;
-        if (obj.MaxGameID == Legal.MaxGameID_7 && generation == 7)
+        if (max == Legal.MaxGameID_7 && generation == 7)
             versions = versions.Where(version => version != GO);
         return versions.Where(version => version.GetGeneration() <= generation);
     }

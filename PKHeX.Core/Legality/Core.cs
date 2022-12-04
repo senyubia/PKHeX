@@ -1,8 +1,11 @@
-﻿using System;
+using System;
 using static PKHeX.Core.BinLinkerAccessor;
 
 namespace PKHeX.Core;
 
+/// <summary>
+/// Loosely aggregated legality logic.
+/// </summary>
 public static partial class Legal
 {
     // Gen 1
@@ -55,48 +58,19 @@ public static partial class Legal
     internal static readonly Learnset[] LevelUpLA = LearnsetReader.GetArray(Get(Util.GetBinaryResource("lvlmove_la.pkl"), "la"));
     internal static readonly Learnset[] MasteryLA = LearnsetReader.GetArray(Get(Util.GetBinaryResource("mastery_la.pkl"), "la"));
 
+    // Gen 9
+    internal static readonly ushort[][] EggMovesSV = EggMoves9.GetArray(Get(Util.GetBinaryResource("eggmove_sv.pkl"), "sv"));
+    internal static readonly ushort[][] ReminderSV = EggMoves9.GetArray(Get(Util.GetBinaryResource("reminder_sv.pkl"), "sv"));
+    internal static readonly Learnset[] LevelUpSV = LearnsetReader.GetArray(Get(Util.GetBinaryResource("lvlmove_sv.pkl"), "sv"));
+
     internal static int GetMaxSpeciesOrigin(PKM pk)
     {
         if (pk.Format == 1)
-            return GetMaxSpeciesOrigin(1);
+            return MaxSpeciesID_1;
         if (pk.Format == 2 || pk.VC)
-            return GetMaxSpeciesOrigin(2);
+            return MaxSpeciesID_2;
         return GetMaxSpeciesOrigin(pk.Generation);
     }
-
-    internal static int GetMaxSpeciesOrigin(int generation, GameVersion version) => generation switch
-    {
-        1 => MaxSpeciesID_1,
-        2 => MaxSpeciesID_2,
-        3 => MaxSpeciesID_3,
-        4 => MaxSpeciesID_4,
-        5 => MaxSpeciesID_5,
-        6 => MaxSpeciesID_6,
-        7 when GameVersion.GG.Contains(version) => MaxSpeciesID_7b,
-        7 when GameVersion.USUM.Contains(version) => MaxSpeciesID_7_USUM,
-        7 => MaxSpeciesID_7,
-        8 when version is GameVersion.PLA => MaxSpeciesID_8a,
-        8 when GameVersion.BDSP.Contains(version) => MaxSpeciesID_8b,
-        8 => MaxSpeciesID_8_R2,
-        _ => -1,
-    };
-
-    internal static int GetMaxSpeciesOrigin(EntityContext context) => context switch
-    {
-        EntityContext.Gen1 => MaxSpeciesID_1,
-        EntityContext.Gen2 => MaxSpeciesID_2,
-        EntityContext.Gen3 => MaxSpeciesID_3,
-        EntityContext.Gen4 => MaxSpeciesID_4,
-        EntityContext.Gen5 => MaxSpeciesID_5,
-        EntityContext.Gen6 => MaxSpeciesID_6,
-        EntityContext.Gen7 => MaxSpeciesID_7_USUM,
-        EntityContext.Gen8 => MaxSpeciesID_8_R2,
-
-        EntityContext.Gen7b => MaxSpeciesID_7b,
-        EntityContext.Gen8a => MaxSpeciesID_8a,
-        EntityContext.Gen8b => MaxSpeciesID_8b,
-        _ => -1,
-    };
 
     internal static int GetMaxSpeciesOrigin(int generation) => generation switch
     {
@@ -108,19 +82,7 @@ public static partial class Legal
         6 => MaxSpeciesID_6,
         7 => MaxSpeciesID_7b,
         8 => MaxSpeciesID_8a,
-        _ => -1,
-    };
-
-    internal static int GetDebutGeneration(int species) => species switch
-    {
-        <= MaxSpeciesID_1 => 1,
-        <= MaxSpeciesID_2 => 2,
-        <= MaxSpeciesID_3 => 3,
-        <= MaxSpeciesID_4 => 4,
-        <= MaxSpeciesID_5 => 5,
-        <= MaxSpeciesID_6 => 6,
-        <= MaxSpeciesID_7b => 7,
-        <= MaxSpeciesID_8a => 8,
+        9 => MaxSpeciesID_9,
         _ => -1,
     };
 
@@ -134,95 +96,8 @@ public static partial class Legal
         6 => (int) LanguageID.Korean,
         7 => (int) LanguageID.ChineseT,
         8 => (int) LanguageID.ChineseT,
+        9 => (int) LanguageID.ChineseT,
         _ => -1,
-    };
-
-    internal static int GetMaxMoveID(int generation) => generation switch
-    {
-        1 => MaxMoveID_1,
-        2 => MaxMoveID_2,
-        3 => MaxMoveID_3,
-        4 => MaxMoveID_4,
-        5 => MaxMoveID_5,
-        6 => MaxMoveID_6_AO,
-        7 => MaxMoveID_7b,
-        8 => MaxMoveID_8a,
-        _ => -1,
-    };
-
-    internal const GameVersion NONE = GameVersion.Invalid;
-    internal static readonly LearnVersion LearnNONE = new(-1);
-
-    internal static bool HasVisitedB2W2(this PKM pk, int species) => pk.InhabitedGeneration(5, species);
-    internal static bool HasVisitedORAS(this PKM pk, int species) => pk.InhabitedGeneration(6, species) && (pk.AO || !pk.IsUntraded);
-    internal static bool HasVisitedUSUM(this PKM pk, int species) => pk.InhabitedGeneration(7, species) && (pk.USUM || !pk.IsUntraded);
-
-    internal static bool HasVisitedSWSH(this PKM pk, EvoCriteria[] evos)
-    {
-        if (pk.SWSH)
-            return true;
-        if (pk.IsUntraded)
-            return false;
-        if (pk.BDSP && pk.Species is (int)Species.Spinda or (int)Species.Nincada)
-            return false;
-
-        var pt = PersonalTable.SWSH;
-        foreach (var evo in evos)
-        {
-            if (pt.IsPresentInGame(evo.Species, evo.Form))
-                return true;
-        }
-        return false;
-    }
-
-    internal static bool HasVisitedBDSP(this PKM pk, EvoCriteria[] evos)
-    {
-        if (pk.BDSP)
-            return true;
-        if (pk.IsUntraded)
-            return false;
-        if (pk.Species is (int)Species.Spinda or (int)Species.Nincada)
-            return false;
-
-        var pt = PersonalTable.BDSP;
-        foreach (var evo in evos)
-        {
-            if (pt.IsPresentInGame(evo.Species, evo.Form))
-                return true;
-        }
-        return false;
-    }
-
-    internal static bool HasVisitedLA(this PKM pk, EvoCriteria[] evos)
-    {
-        if (pk.LA)
-            return true;
-        if (pk.IsUntraded)
-            return false;
-
-        var pt = PersonalTable.LA;
-        foreach (var evo in evos)
-        {
-            if (pt.IsPresentInGame(evo.Species, evo.Form))
-                return true;
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Checks if the moveset is restricted to only a specific version.
-    /// </summary>
-    /// <param name="pk">Entity to check</param>
-    internal static (bool IsRestricted, GameVersion Game) IsMovesetRestricted(this PKM pk) => pk switch
-    {
-        PB7 => (true, GameVersion.GP),
-        PA8 => (true, GameVersion.PLA),
-        PB8 => (true, GameVersion.BD),
-        PK8 when pk.Version > (int)GameVersion.SH => (true, GameVersion.SH), // Permit past generation moves.
-
-        IBattleVersion { BattleVersion: not 0 } bv => (true, (GameVersion)bv.BattleVersion),
-        _ when pk.IsUntraded => (true, (GameVersion)pk.Version),
-        _ => (false, GameVersion.Any),
     };
 
     /// <summary>
@@ -230,22 +105,13 @@ public static partial class Legal
     /// </summary>
     /// <remarks>Already checked for generations &lt; 8.</remarks>
     /// <param name="pk">Entity to check</param>
-    internal static bool IsOriginalMovesetDeleted(this PKM pk)
+    internal static bool IsOriginalMovesetDeleted(this PKM pk) => pk switch
     {
-        if (pk is PA8 {LA: false} or PB8 {BDSP: false})
-            return true;
-        if (pk.IsNative)
-        {
-            if (pk is PK8 {LA: true} or PK8 {BDSP: true})
-                return true;
-            return false;
-        }
-
-        if (pk is IBattleVersion { BattleVersion: not 0 })
-            return true;
-
-        return false;
-    }
+        PA8 pa8 => !pa8.LA,
+        PB8 pb8 => !pb8.BDSP,
+        PK8 pk8 => pk8.IsSideTransfer || pk8.BattleVersion != 0,
+        _ => false,
+    };
 
     /// <summary>
     /// Indicates if PP Ups are available for use.
@@ -282,13 +148,26 @@ public static partial class Legal
         return true;
     }
 
-    public static bool GetIsFixedIVSequenceValidNoRand(ReadOnlySpan<int> IVs, PKM pk)
+    public static bool GetIsFixedIVSequenceValidSkipRand(IndividualValueSet IVs, PKM pk, int max = 31)
     {
-        for (int i = 0; i < 6; i++)
-        {
-            if (IVs[i] != pk.GetIV(i))
-                return false;
-        }
+        // Template IVs not in the [0,max] range are random. Only check for IVs within the "specified" range.
+        if ((uint)IVs.HP  <= max && IVs.HP  != pk.IV_HP ) return false;
+        if ((uint)IVs.ATK <= max && IVs.ATK != pk.IV_ATK) return false;
+        if ((uint)IVs.DEF <= max && IVs.DEF != pk.IV_DEF) return false;
+        if ((uint)IVs.SPE <= max && IVs.SPE != pk.IV_SPE) return false;
+        if ((uint)IVs.SPA <= max && IVs.SPA != pk.IV_SPA) return false;
+        if ((uint)IVs.SPD <= max && IVs.SPD != pk.IV_SPD) return false;
+        return true;
+    }
+
+    public static bool GetIsFixedIVSequenceValidNoRand(IndividualValueSet IVs, PKM pk)
+    {
+        if (IVs.HP  != pk.IV_HP ) return false;
+        if (IVs.ATK != pk.IV_ATK) return false;
+        if (IVs.DEF != pk.IV_DEF) return false;
+        if (IVs.SPE != pk.IV_SPE) return false;
+        if (IVs.SPA != pk.IV_SPA) return false;
+        if (IVs.SPD != pk.IV_SPD) return false;
         return true;
     }
 

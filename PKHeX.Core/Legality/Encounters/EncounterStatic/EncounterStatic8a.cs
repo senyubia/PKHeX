@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace PKHeX.Core;
 
@@ -6,20 +6,21 @@ namespace PKHeX.Core;
 /// Generation 8 Static Encounter
 /// </summary>
 /// <inheritdoc cref="EncounterStatic"/>
-public sealed record EncounterStatic8a(GameVersion Version) : EncounterStatic(Version), IAlpha, IMasteryInitialMoveShop8
+public sealed record EncounterStatic8a(GameVersion Version) : EncounterStatic(Version), IAlphaReadOnly, IMasteryInitialMoveShop8, IScaledSizeReadOnly
 {
     public override int Generation => 8;
+    public override EntityContext Context => EntityContext.Gen8a;
 
     public byte HeightScalar { get; }
     public byte WeightScalar { get; }
-    public bool IsAlpha { get; set; }
+    public bool IsAlpha { get; init; }
     public EncounterStatic8aCorrelation Method { get; init; }
 
     public bool HasFixedHeight => HeightScalar != NoScalar;
     public bool HasFixedWeight => WeightScalar != NoScalar;
     private const byte NoScalar = 0;
 
-    public EncounterStatic8a(ushort species, ushort form, byte level, byte h = NoScalar, byte w = NoScalar) : this(GameVersion.PLA)
+    public EncounterStatic8a(ushort species, byte form, byte level, byte h = NoScalar, byte w = NoScalar) : this(GameVersion.PLA)
     {
         Species = species;
         Form = form;
@@ -42,7 +43,7 @@ public sealed record EncounterStatic8a(GameVersion Version) : EncounterStatic(Ve
             pa.HeightScalar = HeightScalar;
         if (HasFixedWeight)
             pa.WeightScalar = WeightScalar;
-        pa.HeightScalarCopy = pa.HeightScalar;
+        pa.Scale = pa.HeightScalar;
 
         pa.ResetHeight();
         pa.ResetWeight();
@@ -54,7 +55,7 @@ public sealed record EncounterStatic8a(GameVersion Version) : EncounterStatic(Ve
         var (_, slotSeed) = Overworld8aRNG.ApplyDetails(pk, criteria, para, IsAlpha);
         // We don't override LevelMin, so just handle the two species cases.
         if (Species == (int)Core.Species.Zorua)
-            pk.CurrentLevel = pk.Met_Level = Overworld8aRNG.GetRandomLevel(slotSeed, 26, 28);
+            pk.CurrentLevel = pk.Met_Level = Overworld8aRNG.GetRandomLevel(slotSeed, 27, 29);
         else if (Species == (int)Core.Species.Phione)
             pk.CurrentLevel = pk.Met_Level = Overworld8aRNG.GetRandomLevel(slotSeed, 33, 36);
 
@@ -123,9 +124,9 @@ public sealed record EncounterStatic8a(GameVersion Version) : EncounterStatic(Ve
     public bool IsForcedMasteryCorrect(PKM pk)
     {
         ushort alpha = 0;
-        if (IsAlpha && Moves.Count != 0)
+        if (IsAlpha && Moves.HasMoves)
         {
-            if (pk is PA8 pa && (alpha = pa.AlphaMove) != Moves[0])
+            if (pk is PA8 pa && (alpha = pa.AlphaMove) != Moves.Move1)
                 return false;
         }
 
@@ -139,10 +140,10 @@ public sealed record EncounterStatic8a(GameVersion Version) : EncounterStatic(Ve
         if (!p.IsValidPurchasedEncounter(learn, level, alpha, allowAlphaPurchaseBug))
             return false;
 
-        Span<int> moves = stackalloc int[4];
+        Span<ushort> moves = stackalloc ushort[4];
         var mastery = Legal.MasteryLA[index];
-        if (Moves.Count != 0)
-            moves = (int[])Moves;
+        if (Moves.HasMoves)
+            Moves.CopyTo(moves);
         else
             learn.SetEncounterMoves(level, moves);
 
@@ -152,12 +153,14 @@ public sealed record EncounterStatic8a(GameVersion Version) : EncounterStatic(Ve
     protected override void SetEncounterMoves(PKM pk, GameVersion version, int level)
     {
         var pa8 = (PA8)pk;
-        Span<int> moves = stackalloc int[4];
+        Span<ushort> moves = stackalloc ushort[4];
         var (learn, mastery) = GetLevelUpInfo();
         LoadInitialMoveset(pa8, moves, learn, level);
         pk.SetMoves(moves);
         pk.SetMaximumPPCurrent(moves);
         pa8.SetEncounterMasteryFlags(moves, mastery, level);
+        if (pa8.AlphaMove != 0)
+            pa8.SetMasteryFlagMove(pa8.AlphaMove);
     }
 
     public (Learnset Learn, Learnset Mastery) GetLevelUpInfo()
@@ -168,14 +171,14 @@ public sealed record EncounterStatic8a(GameVersion Version) : EncounterStatic(Ve
         return (learn, mastery);
     }
 
-    public void LoadInitialMoveset(PA8 pa8, Span<int> moves, Learnset learn, int level)
+    public void LoadInitialMoveset(PA8 pa8, Span<ushort> moves, Learnset learn, int level)
     {
-        if (Moves.Count == 0)
-            learn.SetEncounterMoves(level, moves);
+        if (Moves.HasMoves)
+            Moves.CopyTo(moves);
         else
-            ((int[])Moves).CopyTo(moves);
+            learn.SetEncounterMoves(level, moves);
         if (IsAlpha)
-            pa8.AlphaMove = (ushort)moves[0];
+            pa8.AlphaMove = moves[0];
     }
 
     private OverworldParam8a GetParams()

@@ -1,7 +1,15 @@
-﻿namespace PKHeX.Core;
+namespace PKHeX.Core;
 
+/// <summary>
+/// Represents all details that an entity may be encountered with.
+/// </summary>
 public interface IEncounterTemplate : ISpeciesForm, IVersion, IGeneration, IShiny
 {
+    /// <summary>
+    /// Original Context
+    /// </summary>
+    EntityContext Context { get; }
+
     /// <summary>
     /// Indicates if the encounter originated as an egg.
     /// </summary>
@@ -11,6 +19,10 @@ public interface IEncounterTemplate : ISpeciesForm, IVersion, IGeneration, IShin
     /// Minimum level for the encounter.
     /// </summary>
     byte LevelMin { get; }
+
+    /// <summary>
+    /// Maximum level for the encounter.
+    /// </summary>
     byte LevelMax { get; }
 }
 

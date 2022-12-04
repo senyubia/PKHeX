@@ -83,13 +83,13 @@ public abstract class SAV4 : SaveFile, IEventFlag37
     public int EventFlagCount => 0xB60; // 2912
     public int EventWorkCount => (EventFlag - EventWork) >> 1;
     protected sealed override int GiftCountMax => 11;
-    public sealed override int OTLength => 7;
-    public sealed override int NickLength => 10;
+    public sealed override int MaxStringLengthOT => 7;
+    public sealed override int MaxStringLengthNickname => 10;
     public sealed override int MaxMoney => 999999;
     public sealed override int MaxCoins => 50_000;
 
-    public sealed override int MaxMoveID => Legal.MaxMoveID_4;
-    public sealed override int MaxSpeciesID => Legal.MaxSpeciesID_4;
+    public sealed override ushort MaxMoveID => Legal.MaxMoveID_4;
+    public sealed override ushort MaxSpeciesID => Legal.MaxSpeciesID_4;
     // MaxItemID
     public sealed override int MaxAbilityID => Legal.MaxAbilityID_4;
     public sealed override int MaxBallID => Legal.MaxBallID_4;
@@ -163,7 +163,7 @@ public abstract class SAV4 : SaveFile, IEventFlag37
     public override string OT
     {
         get => GetString(General.AsSpan(Trainer1, 16));
-        set => SetString(General.AsSpan(Trainer1, 16), value.AsSpan(), OTLength, StringConverterOption.ClearZero);
+        set => SetString(General.AsSpan(Trainer1, 16), value.AsSpan(), MaxStringLengthOT, StringConverterOption.ClearZero);
     }
 
     public override int TID
@@ -239,7 +239,7 @@ public abstract class SAV4 : SaveFile, IEventFlag37
     public string Rival
     {
         get => GetString(Rival_Trash);
-        set => SetString(Rival_Trash, value.AsSpan(), OTLength, StringConverterOption.ClearZero);
+        set => SetString(Rival_Trash, value.AsSpan(), MaxStringLengthOT, StringConverterOption.ClearZero);
     }
 
     public abstract Span<byte> Rival_Trash { get; set; }
@@ -303,9 +303,8 @@ public abstract class SAV4 : SaveFile, IEventFlag37
         return false;
     }
 
-    private byte[] MatchMysteryGifts(DataMysteryGift[] value)
+    private bool MatchMysteryGifts(DataMysteryGift[] value, Span<byte> indexes)
     {
-        byte[] cardMatch = new byte[8];
         for (int i = 0; i < 8; i++)
         {
             if (value[i] is not PGT pgt)
@@ -313,11 +312,11 @@ public abstract class SAV4 : SaveFile, IEventFlag37
 
             if (pgt.CardType == 0) // empty
             {
-                cardMatch[i] = pgt.Slot = 0;
+                indexes[i] = pgt.Slot = 0;
                 continue;
             }
 
-            cardMatch[i] = pgt.Slot = 3;
+            indexes[i] = pgt.Slot = 3;
             for (byte j = 0; j < 3; j++)
             {
                 if (value[8 + j] is not PCD pcd)
@@ -329,11 +328,11 @@ public abstract class SAV4 : SaveFile, IEventFlag37
 
                 if (this is SAV4HGSS)
                     j++; // hgss 0,1,2; dppt 1,2,3
-                cardMatch[i] = pgt.Slot = j;
+                indexes[i] = pgt.Slot = j;
                 break;
             }
         }
-        return cardMatch;
+        return true;
     }
 
     public override MysteryGiftAlbum GiftAlbum
@@ -406,8 +405,9 @@ public abstract class SAV4 : SaveFile, IEventFlag37
         }
         set
         {
-            var Matches = MatchMysteryGifts(value); // automatically applied
-            if (Matches.Length == 0)
+            Span<byte> indexes = stackalloc byte[8];
+            bool matchAny = MatchMysteryGifts(value, indexes); // automatically applied
+            if (!matchAny)
                 return;
 
             for (int i = 0; i < 8; i++) // 8 PGT
@@ -426,8 +426,8 @@ public abstract class SAV4 : SaveFile, IEventFlag37
     }
 
     protected sealed override void SetDex(PKM pk) => Dex.SetDex(pk);
-    public sealed override bool GetCaught(int species) => Dex.GetCaught(species);
-    public sealed override bool GetSeen(int species) => Dex.GetSeen(species);
+    public sealed override bool GetCaught(ushort species) => Dex.GetCaught(species);
+    public sealed override bool GetSeen(ushort species) => Dex.GetSeen(species);
 
     public int DexUpgraded
     {

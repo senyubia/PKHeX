@@ -24,7 +24,7 @@ public sealed class SAV4DP : SAV4Sinnoh
     public override Zukan4 Dex { get; }
 
     protected override SAV4 CloneInternal4() => State.Exportable ? new SAV4DP((byte[])Data.Clone()) : new SAV4DP();
-    public override PersonalTable Personal => PersonalTable.DP;
+    public override IPersonalTable Personal => PersonalTable.DP;
     public override IReadOnlyList<ushort> HeldItems => Legal.HeldItems_DP;
     public override int MaxItemID => Legal.MaxItemID_4_DP;
 
@@ -113,7 +113,7 @@ public sealed class SAV4DP : SAV4Sinnoh
         return active;
     }
 
-    public void SetMysteryGiftDPSlotActiveFlags(bool[] value)
+    public void SetMysteryGiftDPSlotActiveFlags(ReadOnlySpan<bool> value)
     {
         if (value.Length != GiftCountMax)
             return;
@@ -147,8 +147,8 @@ public sealed class SAV4DP : SAV4Sinnoh
 
     public override Span<byte> Rival_Trash
     {
-        get => General.AsSpan(0x25A8, OTLength * 2);
-        set { if (value.Length == OTLength * 2) value.CopyTo(General.AsSpan(0x25A8)); }
+        get => General.AsSpan(0x25A8, MaxStringLengthOT * 2);
+        set { if (value.Length == MaxStringLengthOT * 2) value.CopyTo(General.AsSpan(0x25A8)); }
     }
 
     public override int X2 { get => ReadUInt16LittleEndian(General.AsSpan(0x25FA)); set => WriteUInt16LittleEndian(General.AsSpan(0x25FA), (ushort)value); }

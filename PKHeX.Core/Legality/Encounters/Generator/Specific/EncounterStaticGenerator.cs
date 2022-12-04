@@ -1,20 +1,26 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 using static PKHeX.Core.Legal;
 using static PKHeX.Core.Encounters1;
 using static PKHeX.Core.Encounters2;
-using static PKHeX.Core.Encounters3;
-using static PKHeX.Core.Encounters3GC;
-using static PKHeX.Core.Encounters4;
-using static PKHeX.Core.Encounters5;
-using static PKHeX.Core.Encounters6;
-using static PKHeX.Core.Encounters7;
-using static PKHeX.Core.Encounters7b;
+using static PKHeX.Core.Encounters3RSE;
+using static PKHeX.Core.Encounters3FRLG;
+using static PKHeX.Core.Encounters3XD;
+using static PKHeX.Core.Encounters4DPPt;
+using static PKHeX.Core.Encounters4HGSS;
+using static PKHeX.Core.Encounters5BW;
+using static PKHeX.Core.Encounters5B2W2;
+using static PKHeX.Core.Encounters6XY;
+using static PKHeX.Core.Encounters6AO;
+using static PKHeX.Core.Encounters7SM;
+using static PKHeX.Core.Encounters7USUM;
+using static PKHeX.Core.Encounters7GG;
 using static PKHeX.Core.Encounters8;
 using static PKHeX.Core.Encounters8a;
 using static PKHeX.Core.Encounters8b;
+using static PKHeX.Core.Encounters9;
 
 using static PKHeX.Core.GameVersion;
 
@@ -108,9 +114,9 @@ public static class EncounterStaticGenerator
         }
     }
 
-    private static int GetVCSpecies(ReadOnlySpan<EvoCriteria> chain, PKM pk, int max)
+    private static ushort GetVCSpecies(ReadOnlySpan<EvoCriteria> chain, PKM pk, int max)
     {
-        int species = pk.Species;
+        ushort species = pk.Species;
         foreach (var z in chain)
         {
             if (z.Species > max)
@@ -179,6 +185,9 @@ public static class EncounterStaticGenerator
         BD => StaticBD,
         SP => StaticSP,
         PLA => StaticLA,
+
+        SL => StaticSL,
+        VL => StaticVL,
         _ => Array.Empty<EncounterStatic>(),
     };
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -249,9 +249,15 @@ public partial class SAV_Misc4 : Form
         s.SetPoketchDotArtistData(DotArtistByte);
     }
 
-    private void SetPictureBoxFromFlags(byte[] inp)
+    private void SetPictureBoxFromFlags(ReadOnlySpan<byte> inp)
     {
-        if (inp.Length != 120) return;
+        if (inp.Length != 120)
+            return;
+        PB_DotArtist.Image = GetDotArt(inp);
+    }
+
+    private Bitmap GetDotArt(ReadOnlySpan<byte> inp)
+    {
         byte[] dupbyte = new byte[23040];
         for (int iy = 0; iy < 20; iy++)
         {
@@ -275,7 +281,7 @@ public partial class SAV_Misc4 : Form
         BitmapData dabdata = dabmp.LockBits(new Rectangle(0, 0, dabmp.Width, dabmp.Height), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
         System.Runtime.InteropServices.Marshal.Copy(dupbyte, 0, dabdata.Scan0, dupbyte.Length);
         dabmp.UnlockBits(dabdata);
-        PB_DotArtist.Image = dabmp;
+        return dabmp;
     }
 
     private void SetFlagsFromFileName(string inpFileName)
@@ -717,11 +723,11 @@ public partial class SAV_Misc4 : Form
         StatAddrControl(SetValToSav: -1, SetSavToVal: false);
     }
 
-    private int species = -1;
+    private ushort species = ushort.MaxValue;
 
     private void ChangeSpecies(object sender, EventArgs e)
     {
-        species = (int)CB_Species.SelectedValue;
+        species = (ushort)WinFormsUtil.GetIndex(CB_Species);
         if (editing)
             return;
         editing = true;
@@ -755,7 +761,7 @@ public partial class SAV_Misc4 : Form
     private void GetHallStat()
     {
         int ofscur = BFF[2][2] + (BFF[2][3] * CB_Stats2.SelectedIndex);
-        int curspe = ReadInt16LittleEndian(SAV.General.AsSpan(ofscur + 4));
+        var curspe = ReadUInt16LittleEndian(SAV.General.AsSpan(ofscur + 4));
         bool c = curspe == species;
         CHK_HallCurrent.Checked = c;
         CHK_HallCurrent.Text = curspe > 0 && curspe <= SAV.MaxSpeciesID
@@ -825,7 +831,7 @@ public partial class SAV_Misc4 : Form
 
     private void SaveWalker(SAV4HGSS s)
     {
-        bool[] courses = new bool[32];
+        Span<bool> courses = stackalloc bool[32];
         for (int i = 0; i < CLB_WalkerCourses.Items.Count; i++)
             courses[i] = CLB_WalkerCourses.GetItemChecked(i);
         s.SetPokewalkerCoursesUnlocked(courses);

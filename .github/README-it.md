@@ -7,7 +7,7 @@ Editor di Salvataggi Pokémon per la serie principale, programmato in [C#](https
 Supporta i seguenti file:
 * File di salvataggio ("main", \*.sav, \*.dsv, \*.dat, \*.gci, \*.bin)
 * File di Memory Card GameCube (\*.raw, \*.bin) contenenti File di Salvataggio Pokémon.
-* File di Entità Pokémon individuali (.pk\*, \*.ck3, \*.xk3, \*.pb7, \*.sk2, \*.bk4)
+* File di Entità Pokémon individuali (.pk\*, \*.ck3, \*.xk3, \*.pb7, \*.sk2, \*.bk4, \*.rk4)
 * File di Dono Segreto (\*.pgt, \*.pcd, \*.pgf, .wc\*) inclusa conversione in .pk\*
 * Importazione di Entità del Go Park (\*.gp1) inclusa conversione in .pb7
 * Importazione di squadre da Video Lotta del 3DS decriptati
@@ -24,7 +24,7 @@ PKHeX si aspetta file di salvataggio non criptati con le chiavi specifiche della
 
 ## Screenshots
 
-![Main Window](https://i.imgur.com/RBcUanJ.png)
+![Main Window](https://i.imgur.com/QyQYtFg.png)
 
 ## Building
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 
 namespace PKHeX.Core;
@@ -44,7 +44,7 @@ public static class Vivillon3DS
         /* 0 Icy Snow    */ Region3DSFlags.Americas | Region3DSFlags.Europe,
         /* 1 Polar       */ Region3DSFlags.Americas | Region3DSFlags.Europe | Region3DSFlags.China,
         /* 2 Tundra      */ Region3DSFlags.Japan    | Region3DSFlags.Europe,
-        /* 3 Continental */ Region3DSFlags.Americas | Region3DSFlags.Europe | Region3DSFlags.China | Region3DSFlags.Korea | Region3DSFlags.Taiwan,
+        /* 3 Continental */ Region3DSFlags.Japan    | Region3DSFlags.Americas | Region3DSFlags.Europe | Region3DSFlags.China | Region3DSFlags.Korea | Region3DSFlags.Taiwan,
         /* 4 Garden      */                           Region3DSFlags.Europe,
         /* 5 Elegant     */ Region3DSFlags.Japan,
         /* 6 Meadow      */                           Region3DSFlags.Europe,
@@ -71,7 +71,7 @@ public static class Vivillon3DS
         /* 0 Icy Snow    */ new byte[] {018,076,096,100,107},
         /* 1 Polar       */ new byte[] {010,018,020,049,076,096,100,107,160},
         /* 2 Tundra      */ new byte[] {001,074,081,096},
-        /* 3 Continental */ new byte[] {010,067,073,074,075,077,078,084,087,094,096,097,100,107,128,136,144,160,169},
+        /* 3 Continental */ new byte[] {001,010,067,073,074,075,077,078,084,087,094,096,097,100,107,128,136,144,160,169},
         /* 4 Garden      */ new byte[] {065,082,095,110,125},
         /* 5 Elegant     */ new byte[] {001},
         /* 6 Meadow      */ new byte[] {066,077,078,083,086,088,105,108,122,127},
@@ -96,6 +96,7 @@ public static class Vivillon3DS
     {
         new(001, 05, // Japan: Elegant
             new FormSubregionTable(02, new byte[] {03,04}),
+            new FormSubregionTable(03, new byte[] {43}),
             new FormSubregionTable(13, new byte[] {48})),
 
         new(010, 14, // Argentina: Savanna
@@ -208,7 +209,7 @@ public static class Vivillon3DS
     /// <summary>
     /// Compares the Vivillon pattern against its console region to determine if the pattern is legal.
     /// </summary>
-    public static bool IsPatternValid(int form, int consoleRegion)
+    public static bool IsPatternValid(byte form, int consoleRegion)
     {
         if ((uint)form > MaxWildFormID)
             return false;
@@ -223,7 +224,7 @@ public static class Vivillon3DS
     /// <param name="country">Country ID</param>
     /// <param name="region">Subregion ID</param>
     /// <returns>True if valid</returns>
-    public static bool IsPatternNative(int form, byte country, byte region)
+    public static bool IsPatternNative(byte form, byte country, byte region)
     {
         if ((uint)form > MaxWildFormID)
             return false;
@@ -245,7 +246,7 @@ public static class Vivillon3DS
     /// </summary>
     /// <param name="country">Country ID</param>
     /// <param name="region">Subregion ID</param>
-    public static int GetPattern(byte country, byte region)
+    public static byte GetPattern(byte country, byte region)
     {
         var ct = Array.Find(RegionFormTable, t => t.CountryID == country);
         if (ct == null) // empty = no forms referenced
@@ -256,14 +257,15 @@ public static class Vivillon3DS
             if (sub.Regions.Contains(region))
                 return sub.Form;
         }
-
         return ct.BaseForm;
     }
 
-    private static int GetPattern(byte country)
+    private static byte GetPattern(byte country)
     {
         var form = Array.FindIndex(VivillonCountryTable, z => z.Contains(country));
-        return Math.Max(0, form);
+        if (form == -1)
+            return 0;
+        return (byte)form;
     }
 
     /// <summary>

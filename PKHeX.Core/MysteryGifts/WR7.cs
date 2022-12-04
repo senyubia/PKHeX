@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace PKHeX.Core;
@@ -14,6 +14,7 @@ public sealed class WR7 : DataMysteryGift
 {
     public const int Size = 0x140;
     public override int Generation => 7;
+    public override EntityContext Context => EntityContext.Gen7;
 
     public override GameVersion Version { get => GameVersion.GG; set { } }
 
@@ -56,10 +57,10 @@ public sealed class WR7 : DataMysteryGift
 
     // unknown: region from 0x10 to 0xFF ?
 
-    public override int Species
+    public override ushort Species
     {
         get => ReadUInt16LittleEndian(Data.AsSpan(0x10C));
-        set => WriteUInt16LittleEndian(Data.AsSpan(0x10C), (ushort)value);
+        set => WriteUInt16LittleEndian(Data.AsSpan(0x10C), value);
     }
 
     public override bool GiftUsed { get; set; }
@@ -84,7 +85,7 @@ public sealed class WR7 : DataMysteryGift
     public ushort ItemSet6Count { get => ReadUInt16LittleEndian(Data.AsSpan(0x126)); set => WriteUInt16LittleEndian(Data.AsSpan(0x126), value); }
 
     public override int Gender { get; set; }
-    public override int Form { get; set; }
+    public override byte Form { get; set; }
     public override int TID { get; set; }
     public override int SID { get; set; }
 

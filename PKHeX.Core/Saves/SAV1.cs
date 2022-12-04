@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using static System.Buffers.Binary.BinaryPrimitives;
 
@@ -18,7 +18,8 @@ public sealed class SAV1 : SaveFile, ILangDeviantSave, IEventFlagArray
     public bool Japanese { get; }
     public bool Korean => false;
 
-    public override PersonalTable Personal { get; }
+    private readonly PersonalTable1 Table;
+    public override IPersonalTable Personal => Table;
     public override IReadOnlyList<ushort> HeldItems => Array.Empty<ushort>();
 
     public override IReadOnlyList<string> PKMExtensions => Array.FindAll(PKM.Extensions, f =>
@@ -32,7 +33,7 @@ public sealed class SAV1 : SaveFile, ILangDeviantSave, IEventFlagArray
         Version = version;
         Japanese = japanese;
         Offsets = Japanese ? SAV1Offsets.JPN : SAV1Offsets.INT;
-        Personal = version == GameVersion.YW ? PersonalTable.Y : PersonalTable.RB;
+        Table = version == GameVersion.YW ? PersonalTable.Y : PersonalTable.RB;
         Initialize(version);
         ClearBoxes();
     }
@@ -43,7 +44,7 @@ public sealed class SAV1 : SaveFile, ILangDeviantSave, IEventFlagArray
         Offsets = Japanese ? SAV1Offsets.JPN : SAV1Offsets.INT;
 
         Version = versionOverride != GameVersion.Any ? versionOverride : SaveUtil.GetIsG1SAV(data);
-        Personal = Version == GameVersion.YW ? PersonalTable.Y : PersonalTable.RB;
+        Table = Version == GameVersion.YW ? PersonalTable.Y : PersonalTable.RB;
         if (Version == GameVersion.Invalid)
             return;
 
@@ -213,8 +214,8 @@ public sealed class SAV1 : SaveFile, ILangDeviantSave, IEventFlagArray
     public override PKM BlankPKM => new PK1(Japanese);
     public override Type PKMType => typeof(PK1);
 
-    public override int MaxMoveID => Legal.MaxMoveID_1;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_1;
+    public override ushort MaxMoveID => Legal.MaxMoveID_1;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_1;
     public override int MaxAbilityID => Legal.MaxAbilityID_1;
     public override int MaxItemID => Legal.MaxItemID_1;
     public override int MaxBallID => 0; // unused
@@ -228,8 +229,8 @@ public sealed class SAV1 : SaveFile, ILangDeviantSave, IEventFlagArray
     public override int Generation => 1;
     public override EntityContext Context => EntityContext.Gen1;
     protected override int GiftCountMax => 0;
-    public override int OTLength => Japanese ? 5 : 7;
-    public override int NickLength => Japanese ? 5 : 10;
+    public override int MaxStringLengthOT => Japanese ? 5 : 7;
+    public override int MaxStringLengthNickname => Japanese ? 5 : 10;
     public override int BoxSlotCount => Japanese ? 30 : 20;
 
     public override bool HasParty => true;
@@ -256,8 +257,8 @@ public sealed class SAV1 : SaveFile, ILangDeviantSave, IEventFlagArray
 
     public override string OT
     {
-        get => GetString(Offsets.OT, OTLength);
-        set => SetString(Data.AsSpan(Offsets.OT, OTLength), value.AsSpan(), OTLength, StringConverterOption.Clear50);
+        get => GetString(Offsets.OT, MaxStringLengthOT);
+        set => SetString(Data.AsSpan(Offsets.OT, MaxStringLengthOT + 1), value.AsSpan(), MaxStringLengthOT, StringConverterOption.ClearZero);
     }
 
     public Span<byte> OT_Trash { get => Data.AsSpan(Offsets.OT, StringLength); set { if (value.Length == StringLength) value.CopyTo(Data.AsSpan(Offsets.OT)); } }
@@ -278,8 +279,8 @@ public sealed class SAV1 : SaveFile, ILangDeviantSave, IEventFlagArray
 
     public string Rival
     {
-        get => GetString(Offsets.Rival, OTLength);
-        set => SetString(Data.AsSpan(Offsets.Rival, OTLength), value.AsSpan(), OTLength, StringConverterOption.Clear50);
+        get => GetString(Offsets.Rival, MaxStringLengthOT);
+        set => SetString(Data.AsSpan(Offsets.Rival, MaxStringLengthOT), value.AsSpan(), MaxStringLengthOT, StringConverterOption.Clear50);
     }
 
     public Span<byte> Rival_Trash { get => Data.AsSpan(Offsets.Rival, StringLength); set { if (value.Length == StringLength) value.CopyTo(Data.AsSpan(Offsets.Rival)); } }
@@ -343,7 +344,7 @@ public sealed class SAV1 : SaveFile, ILangDeviantSave, IEventFlagArray
     public int Badges
     {
         get => Data[Offsets.Badges];
-        set { if (value < 0) return; Data[Offsets.Badges] = (byte)value; }
+        set => Data[Offsets.Badges] = (byte)value;
     }
 
     private byte Options
@@ -497,7 +498,7 @@ public sealed class SAV1 : SaveFile, ILangDeviantSave, IEventFlagArray
     // Pokédex
     protected override void SetDex(PKM pk)
     {
-        int species = pk.Species;
+        ushort species = pk.Species;
         if (!CanSetDex(species))
             return;
 
@@ -505,9 +506,9 @@ public sealed class SAV1 : SaveFile, ILangDeviantSave, IEventFlagArray
         SetSeen(pk.Species, true);
     }
 
-    private bool CanSetDex(int species)
+    private bool CanSetDex(ushort species)
     {
-        if (species <= 0)
+        if (species == 0)
             return false;
         if (species > MaxSpeciesID)
             return false;
@@ -516,19 +517,19 @@ public sealed class SAV1 : SaveFile, ILangDeviantSave, IEventFlagArray
         return true;
     }
 
-    public override bool GetSeen(int species) => GetDexFlag(Offsets.DexSeen, species);
-    public override bool GetCaught(int species) => GetDexFlag(Offsets.DexCaught, species);
-    public override void SetSeen(int species, bool seen) => SetDexFlag(Offsets.DexSeen, species, seen);
-    public override void SetCaught(int species, bool caught) => SetDexFlag(Offsets.DexCaught, species, caught);
+    public override bool GetSeen(ushort species) => GetDexFlag(Offsets.DexSeen, species);
+    public override bool GetCaught(ushort species) => GetDexFlag(Offsets.DexCaught, species);
+    public override void SetSeen(ushort species, bool seen) => SetDexFlag(Offsets.DexSeen, species, seen);
+    public override void SetCaught(ushort species, bool caught) => SetDexFlag(Offsets.DexCaught, species, caught);
 
-    private bool GetDexFlag(int region, int species)
+    private bool GetDexFlag(int region, ushort species)
     {
         int bit = species - 1;
         int ofs = bit >> 3;
         return GetFlag(region + ofs, bit & 7);
     }
 
-    private void SetDexFlag(int region, int species, bool value)
+    private void SetDexFlag(int region, ushort species, bool value)
     {
         int bit = species - 1;
         int ofs = bit >> 3;

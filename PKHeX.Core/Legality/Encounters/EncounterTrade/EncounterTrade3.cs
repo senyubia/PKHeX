@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace PKHeX.Core;
 
@@ -6,9 +6,10 @@ namespace PKHeX.Core;
 /// Generation 3 Trade Encounter
 /// </summary>
 /// <inheritdoc cref="EncounterTrade"/>
-public sealed record EncounterTrade3 : EncounterTrade, IContestStats
+public sealed record EncounterTrade3 : EncounterTrade, IContestStatsReadOnly
 {
     public override int Generation => 3;
+    public override EntityContext Context => EntityContext.Gen3;
     public override int Location => Locations.LinkTrade3NPC;
 
     /// <summary>
@@ -50,7 +51,7 @@ public sealed record EncounterTrade3 : EncounterTrade, IContestStats
         if (!base.IsMatchExact(pk, evo))
             return false;
 
-        if (pk is IContestStats s && s.IsContestBelow(this))
+        if (pk is IContestStatsReadOnly s && s.IsContestBelow(this))
             return false;
 
         return true;

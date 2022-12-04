@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using static PKHeX.Core.Species;
 
 namespace PKHeX.Core;
@@ -16,16 +16,6 @@ public static partial class Legal
     internal const int MaxMoveID_7_USUM = 728;
     internal const int MaxItemID_7_USUM = 959;
     internal const int MaxAbilityID_7_USUM = 233;
-
-    internal static readonly int[] Tutors_USUM =
-    {
-        450, 343, 162, 530, 324, 442, 402, 529, 340, 067, 441, 253, 009, 007, 008,
-        277, 335, 414, 492, 356, 393, 334, 387, 276, 527, 196, 401,      428, 406, 304, 231,
-        020, 173, 282, 235, 257, 272, 215, 366, 143, 220, 202, 409,      264, 351, 352,
-        380, 388, 180, 495, 270, 271, 478, 472, 283, 200, 278, 289, 446,      285,
-
-        477, 502, 432, 710, 707, 675, 673,
-    };
 
     internal static readonly ushort[] Pouch_Regular_SM = // 00
     {
@@ -64,7 +54,7 @@ public static partial class Legal
         841, 842, 843, 845, 847, 850, 857, 858, 860,
     };
 
-    internal static readonly ushort[] Pouch_Key_USUM = ArrayUtil.ConcatAll(Pouch_Key_SM, new ushort[] {
+    internal static readonly ushort[] Pouch_Key_USUM = ArrayUtil.ConcatAll(Pouch_Key_SM, stackalloc ushort[] {
         933, 934, 935, 936, 937, 938, 939, 940, 941, 942, 943, 944, 945, 946, 947, 948,
         440,
     });
@@ -101,19 +91,19 @@ public static partial class Legal
         776, 777, 778, 779, 780, 781, 782, 783, 784, 785, 786, 787, 788, 789, 790, 791, 792, 793, 794, 798, 799, 800, 801, 802, 803, 804, 805, 806, 836,
     };
 
-    internal static readonly ushort[] Pouch_ZCrystal_USUM = ArrayUtil.ConcatAll(Pouch_ZCrystal_SM, new ushort[] { // Bead
+    internal static readonly ushort[] Pouch_ZCrystal_USUM = ArrayUtil.ConcatAll(Pouch_ZCrystal_SM, stackalloc ushort[] { // Bead
         927, 928, 929, 930, 931, 932,
     });
 
-    internal static readonly ushort[] Pouch_ZCrystalHeld_USUM = ArrayUtil.ConcatAll(Pouch_ZCrystalHeld_SM, new ushort[] { // Piece
+    internal static readonly ushort[] Pouch_ZCrystalHeld_USUM = ArrayUtil.ConcatAll(Pouch_ZCrystalHeld_SM, stackalloc ushort[] { // Piece
         921, 922, 923, 924, 925, 926,
     });
 
-    public static readonly Dictionary<int, int> ZCrystalDictionary = GetDictionary(Pouch_ZCrystal_USUM, Pouch_ZCrystalHeld_USUM);
+    public static readonly Dictionary<ushort, ushort> ZCrystalDictionary = GetDictionary(Pouch_ZCrystal_USUM, Pouch_ZCrystalHeld_USUM);
 
-    private static Dictionary<int, int> GetDictionary(IReadOnlyList<ushort> key, IReadOnlyList<ushort> held)
+    private static Dictionary<ushort, ushort> GetDictionary(IReadOnlyList<ushort> key, IReadOnlyList<ushort> held)
     {
-        var result = new Dictionary<int, int>(held.Count);
+        var result = new Dictionary<ushort, ushort>(held.Count);
         for (int i = 0; i < key.Count; i++)
             result.Add(key[i], held[i]);
         return result;
@@ -122,7 +112,7 @@ public static partial class Legal
     internal static readonly ushort[] HeldItems_SM = ArrayUtil.ConcatAll(Pouch_Items_SM, Pouch_Berries_SM, Pouch_Medicine_SM, Pouch_ZCrystalHeld_SM);
     internal static readonly ushort[] HeldItems_USUM = ArrayUtil.ConcatAll(Pouch_Items_SM, Pouch_Berries_SM, Pouch_Medicine_SM, Pouch_ZCrystalHeld_USUM, Pouch_Roto_USUM);
 
-    internal static readonly HashSet<int> AlolanOriginForms = new()
+    internal static readonly HashSet<ushort> AlolanOriginForms = new()
     {
         (int)Rattata,
         (int)Raticate,
@@ -141,16 +131,14 @@ public static partial class Legal
         (int)Muk,
     };
 
-    internal static readonly HashSet<int> AlolanVariantEvolutions12 = new()
+    internal static readonly HashSet<ushort> AlolanVariantEvolutions12 = new()
     {
         (int)Raichu,
         (int)Exeggutor,
         (int)Marowak,
     };
 
-    public static bool HasAlolanForm(int species) => AlolanOriginForms.Contains(species) || AlolanVariantEvolutions12.Contains(species);
-
-    public static readonly HashSet<int> PastGenAlolanNatives = new()
+    public static readonly HashSet<ushort> PastGenAlolanNatives = new()
     {
         010, 011, 012, 019, 020, 021, 022, 025, 026, 027, 028, 035, 036, 037, 038, 039, 040, 041, 042, 046, 047, 050,
         051, 052, 053, 054, 055, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 072, 073, 074, 075,
@@ -197,23 +185,14 @@ public static partial class Legal
         100, 101, // Voltorb & Electrode
     };
 
-    internal static readonly int[] ZygardeMoves =
-    {
-        245, // Extreme Speed
-        349, // Dragon Dance
-        614, // Thousand Arrows
-        615, // Thousand Waves
-        687, // Core Enforcer
-    };
-
-    internal static readonly HashSet<int> Totem_Alolan = new()
+    internal static readonly HashSet<ushort> Totem_Alolan = new()
     {
         (int)Raticate, // (Normal, Alolan, Totem)
         (int)Marowak, // (Normal, Alolan, Totem)
         (int)Mimikyu, // (Normal, Busted, Totem, Totem_Busted)
     };
 
-    internal static readonly HashSet<int> Totem_NoTransfer = new()
+    internal static readonly HashSet<ushort> Totem_NoTransfer = new()
     {
         (int)Marowak,
         (int)Araquanid,
@@ -221,7 +200,7 @@ public static partial class Legal
         (int)Ribombee,
     };
 
-    internal static readonly HashSet<int> Totem_USUM = new()
+    internal static readonly HashSet<ushort> Totem_USUM = new()
     {
         (int)Raticate,
         (int)Gumshoos,
@@ -237,41 +216,44 @@ public static partial class Legal
         (int)Ribombee,
     };
 
-    internal static readonly HashSet<int> ValidMet_SM = new()
+    internal static readonly HashSet<ushort> ValidMet_SM = new()
     {
-        006, 008, 010, 012, 014, 016, 018, 020, 022, 024, 026, 028, 030, 032, 034, 036, 038, 040, 042, 044, 046, 048,
-        050, 052, 054, 056, 058, 060, 062, 064, 068, 070, 072, 074, 076, 078, 082, 084, 086, 088, 090, 092, 094,
-        100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120, 122, 124, 126, 128, 130, 132, 134, 136, 138, 140, 142, 144, 146, 148,
-        150, 152, 154, 156, 158, 160, 162, 164, 166, 168, 170, 172, 174, 176, 178, 180, 182, 184, 186, 188, 190, 192,
+                       006, 008,
+        010, 012, 014, 016, 018,
+        020, 022, 024, 026, 028,
+        030, 032, 034, 036, 038,
+        040, 042, 044, 046, 048,
+        050, 052, 054, 056, 058,
+        060, 062, 064,      068,
+        070, 072, 074, 076, 078,
+             082, 084, 086, 088,
+        090, 092, 094,
+        100, 102, 104, 106, 108,
+        110, 112, 114, 116, 118,
+        120, 122, 124, 126, 128,
+        130, 132, 134, 136, 138,
+        140, 142, 144, 146, 148,
+        150, 152, 154, 156, 158,
+        160, 162, 164, 166, 168,
+        170, 172, 174, 176, 178,
+        180, 182, 184, 186, 188,
+        190, 192,
 
         Locations.Pelago7, // 30016
     };
 
-    internal static readonly HashSet<int> ValidMet_USUM = new(ValidMet_SM)
+    internal static readonly HashSet<ushort> ValidMet_USUM = new(ValidMet_SM)
     {
         // 194, 195, 196, 197, // Unobtainable new Locations
-        198,
-        200, 202, 204, 206, 208, 210, 212, 214, 216, 218, 220, 222, 224, 226, 228, 230, 232,
-    };
-
-    internal static readonly int[] TMHM_SM =
-    {
-        526, 337, 473, 347, 046, 092, 258, 339, 474, 237,
-        241, 269, 058, 059, 063, 113, 182, 240, 355, 219,
-        218, 076, 479, 085, 087, 089, 216, 141, 094, 247,
-        280, 104, 115, 482, 053, 188, 201, 126, 317, 332,
-        259, 263, 488, 156, 213, 168, 490, 496, 497, 315,
-        211, 411, 412, 206, 503, 374, 451, 507, 693, 511,
-        261, 512, 373, 153, 421, 371, 684, 416, 397, 694,
-        444, 521, 086, 360, 014, 019, 244, 523, 524, 157,
-        404, 525, 611, 398, 138, 447, 207, 214, 369, 164,
-        430, 433, 528, 057, 555, 267, 399, 127, 605, 590,
-
-        // No HMs
+                            198,
+        200, 202, 204, 206, 208,
+        210, 212, 214, 216, 218,
+        220, 222, 224, 226, 228,
+        230, 232,
     };
 
     #region Unreleased Items
-    internal static readonly bool[] ReleasedHeldItems_7 = GetPermitList(MaxItemID_7_USUM, HeldItems_USUM, new ushort[]
+    internal static readonly bool[] ReleasedHeldItems_7 = GetPermitList(MaxItemID_7_USUM, HeldItems_USUM, stackalloc ushort[]
     {
         005, // Safari Ball
         016, // Cherish Ball

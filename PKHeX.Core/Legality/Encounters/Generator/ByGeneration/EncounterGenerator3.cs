@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 
 using static PKHeX.Core.MysteryGiftGenerator;
@@ -46,12 +47,9 @@ public static class EncounterGenerator3
         {
             if (z is EncounterSlot3PokeSpot w)
             {
-                var seeds = MethodFinder.GetPokeSpotSeeds(pk, w.SlotNumber);
-                foreach (var s in seeds)
-                {
-                    info.PIDIV = s;
-                    break;
-                }
+                var pidiv = MethodFinder.GetPokeSpotSeedFirst(pk, w.SlotNumber);
+                if (pidiv.Type == PIDType.PokeSpot)
+                    info.PIDIV = pidiv;
             }
             else if (z is EncounterStaticShadow s)
             {
@@ -225,16 +223,19 @@ public static class EncounterGenerator3
 
     private static bool GetIsShadowLockValid(PKM pk, LegalInfo info, EncounterStaticShadow s)
     {
-        if (s.IVs.Count == 0) // not E-Reader
+        if (!s.EReader)
             return LockFinder.IsAllShadowLockValid(s, info.PIDIV, pk);
 
         // E-Reader have fixed IVs, and aren't recognized as CXD (no PID-IV correlation).
-        var possible = MethodFinder.GetColoEReaderMatches(pk.EncryptionConstant);
-        foreach (var poss in possible)
+        Span<uint> seeds = stackalloc uint[4];
+        var count = XDRNG.GetSeeds(seeds, pk.EncryptionConstant);
+        var xdc = seeds[..count];
+        foreach (var seed in xdc)
         {
-            if (!LockFinder.IsAllShadowLockValid(s, poss, pk))
+            var pidiv = new PIDIV(PIDType.CXD, XDRNG.Next4(seed));
+            if (!LockFinder.IsAllShadowLockValid(s, pidiv, pk))
                 continue;
-            info.PIDIV = poss;
+            info.PIDIV = pidiv;
             return true;
         }
 

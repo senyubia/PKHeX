@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace PKHeX.Core;
@@ -14,16 +14,16 @@ public sealed class FakeSaveFile : SaveFile
     public override int Generation => 3;
     public override string GetString(ReadOnlySpan<byte> data) => string.Empty;
     public override int SetString(Span<byte> destBuffer, ReadOnlySpan<char> value, int maxLength, StringConverterOption option) => 0;
-    public override PersonalTable Personal => PersonalTable.RS;
+    public override IPersonalTable Personal => PersonalTable.RS;
     public override int MaxEV => 0;
     public override IReadOnlyList<ushort> HeldItems => Legal.HeldItems_RS;
     public override int GetBoxOffset(int box) => -1;
     public override string GetBoxName(int box) => $"Box {box:00}";
     public override void SetBoxName(int box, string value) { }
-    public override int OTLength => 5;
-    public override int NickLength => 5;
-    public override int MaxMoveID => 5;
-    public override int MaxSpeciesID => 1;
+    public override int MaxStringLengthOT => 5;
+    public override int MaxStringLengthNickname => 5;
+    public override ushort MaxMoveID => 5;
+    public override ushort MaxSpeciesID => 1;
     public override int MaxItemID => 5;
     public override int MaxBallID => 5;
     public override int MaxGameID => 5;

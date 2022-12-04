@@ -1,5 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
 using static PKHeX.Core.OverworldCorrelation8Requirement;
 
 namespace PKHeX.Core;
@@ -8,15 +6,27 @@ namespace PKHeX.Core;
 /// Generation 8 Static Encounter
 /// </summary>
 /// <inheritdoc cref="EncounterStatic"/>
-public record EncounterStatic8(GameVersion Version) : EncounterStatic(Version), IDynamaxLevel, IGigantamax, IRelearn, IOverworldCorrelation8
+public sealed record EncounterStatic8(GameVersion Version = GameVersion.SWSH) : EncounterStatic(Version), IDynamaxLevelReadOnly, IGigantamaxReadOnly, IRelearn, IOverworldCorrelation8
 {
-    public sealed override int Generation => 8;
+    public override int Generation => 8;
+    public override EntityContext Context => EntityContext.Gen8;
     public bool ScriptedNoMarks { get; init; }
-    public bool CanGigantamax { get; set; }
-    public byte DynamaxLevel { get; set; }
-    public IReadOnlyList<int> Relearn { get; init; } = Array.Empty<int>();
+    public bool CanGigantamax { get; init; }
+    public byte DynamaxLevel { get; init; }
+    public Moveset Relearn { get; init; }
+    public Crossover8 Crossover { get; init; }
 
-    public AreaWeather8 Weather {get; init; } = AreaWeather8.Normal;
+    public AreaWeather8 Weather { get; init; } = AreaWeather8.Normal;
+
+    protected override bool IsMatchLocation(PKM pk)
+    {
+        var met = pk.Met_Location;
+        if (met == Location)
+            return true;
+        if ((uint)met > byte.MaxValue)
+            return false;
+        return Crossover.IsMatchLocation((byte)met);
+    }
 
     protected override bool IsMatchLevel(PKM pk, EvoCriteria evo)
     {
@@ -116,4 +126,11 @@ public enum OverworldCorrelation8Requirement
     CanBeEither,
     MustHave,
     MustNotHave,
+}
+
+public readonly record struct Crossover8(byte L1 = 0, byte L2 = 0, byte L3 = 0, byte L4 = 0, byte L5 = 0, byte L6 = 0, byte L7 = 0)
+{
+    public bool IsMatchLocation(byte location) => location != 0 && L1 != 0 && (
+        location == L1 || location == L2 || location == L3 ||
+        location == L4 || location == L5 || location == L6 || location == L7);
 }

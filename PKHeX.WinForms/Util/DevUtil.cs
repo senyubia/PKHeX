@@ -1,4 +1,4 @@
-﻿#if DEBUG
+#if DEBUG
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +15,7 @@ namespace PKHeX.WinForms
             t.DropDownItems.Add(GetTranslationUpdater());
         }
 
-        private static readonly string[] Languages = {"ja", "fr", "it", "de", "es", "ko", "zh"};
+        private static readonly string[] Languages = {"ja", "fr", "it", "de", "es", "ko", "zh", "zh2"};
         private const string DefaultLanguage = GameLanguage.DefaultLanguage;
 
         public static bool IsUpdatingTranslations { get; private set; }
@@ -96,6 +96,7 @@ namespace PKHeX.WinForms
             "BTN_Shinytize", // ☆
             $"{nameof(Main)}.L_SizeH", // height rating
             $"{nameof(Main)}.L_SizeW", // weight rating
+            $"{nameof(Main)}.L_SizeS", // scale rating
             $"{nameof(Main)}.B_Box", // << and >> arrows
             $"{nameof(Main)}.L_Characteristic=", // Characterstic (dynamic)
             $"{nameof(Main)}.L_Potential", // ★☆☆☆ IV judge evaluation
@@ -151,6 +152,8 @@ namespace PKHeX.WinForms
 
         private static string GetResourcePath(params string[] subdir)
         {
+            // Starting from the executable path, crawl upwards until we get to the repository/sln root
+            const string repo = "PKHeX";
             var path = Application.StartupPath;
             while (true)
             {
@@ -158,7 +161,7 @@ namespace PKHeX.WinForms
                 if (parent is null)
                     throw new DirectoryNotFoundException();
                 path = parent.FullName;
-                if (path.EndsWith("HeX"))
+                if (path.EndsWith(repo))
                     return Path.Combine(path, Path.Combine(subdir));
             }
         }

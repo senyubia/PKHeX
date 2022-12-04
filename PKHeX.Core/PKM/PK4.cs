@@ -37,7 +37,7 @@ public sealed class PK4 : G4PKM
     public override ushort Checksum { get => ReadUInt16LittleEndian(Data.AsSpan(0x06)); set => WriteUInt16LittleEndian(Data.AsSpan(0x06), value); }
 
     #region Block A
-    public override int Species { get => ReadUInt16LittleEndian(Data.AsSpan(0x08)); set => WriteUInt16LittleEndian(Data.AsSpan(0x08), (ushort)value); }
+    public override ushort Species { get => ReadUInt16LittleEndian(Data.AsSpan(0x08)); set => WriteUInt16LittleEndian(Data.AsSpan(0x08), value); }
     public override int HeldItem { get => ReadUInt16LittleEndian(Data.AsSpan(0x0A)); set => WriteUInt16LittleEndian(Data.AsSpan(0x0A), (ushort)value); }
     public override int TID { get => ReadUInt16LittleEndian(Data.AsSpan(0x0C)); set => WriteUInt16LittleEndian(Data.AsSpan(0x0C), (ushort)value); }
     public override int SID { get => ReadUInt16LittleEndian(Data.AsSpan(0x0E)); set => WriteUInt16LittleEndian(Data.AsSpan(0x0E), (ushort)value); }
@@ -98,10 +98,10 @@ public sealed class PK4 : G4PKM
     #endregion
 
     #region Block B
-    public override int Move1 { get => ReadUInt16LittleEndian(Data.AsSpan(0x28)); set => WriteUInt16LittleEndian(Data.AsSpan(0x28), (ushort)value); }
-    public override int Move2 { get => ReadUInt16LittleEndian(Data.AsSpan(0x2A)); set => WriteUInt16LittleEndian(Data.AsSpan(0x2A), (ushort)value); }
-    public override int Move3 { get => ReadUInt16LittleEndian(Data.AsSpan(0x2C)); set => WriteUInt16LittleEndian(Data.AsSpan(0x2C), (ushort)value); }
-    public override int Move4 { get => ReadUInt16LittleEndian(Data.AsSpan(0x2E)); set => WriteUInt16LittleEndian(Data.AsSpan(0x2E), (ushort)value); }
+    public override ushort Move1 { get => ReadUInt16LittleEndian(Data.AsSpan(0x28)); set => WriteUInt16LittleEndian(Data.AsSpan(0x28), value); }
+    public override ushort Move2 { get => ReadUInt16LittleEndian(Data.AsSpan(0x2A)); set => WriteUInt16LittleEndian(Data.AsSpan(0x2A), value); }
+    public override ushort Move3 { get => ReadUInt16LittleEndian(Data.AsSpan(0x2C)); set => WriteUInt16LittleEndian(Data.AsSpan(0x2C), value); }
+    public override ushort Move4 { get => ReadUInt16LittleEndian(Data.AsSpan(0x2E)); set => WriteUInt16LittleEndian(Data.AsSpan(0x2E), value); }
     public override int Move1_PP { get => Data[0x30]; set => Data[0x30] = (byte)value; }
     public override int Move2_PP { get => Data[0x31]; set => Data[0x31] = (byte)value; }
     public override int Move3_PP { get => Data[0x32]; set => Data[0x32] = (byte)value; }
@@ -159,7 +159,7 @@ public sealed class PK4 : G4PKM
 
     public override bool FatefulEncounter { get => (Data[0x40] & 1) == 1; set => Data[0x40] = (byte)((Data[0x40] & ~0x01) | (value ? 1 : 0)); }
     public override int Gender { get => (Data[0x40] >> 1) & 0x3; set => Data[0x40] = (byte)((Data[0x40] & ~0x06) | (value << 1)); }
-    public override int Form { get => Data[0x40] >> 3; set => Data[0x40] = (byte)((Data[0x40] & 0x07) | (value << 3)); }
+    public override byte Form { get => (byte)(Data[0x40] >> 3); set => Data[0x40] = (byte)((Data[0x40] & 0x07) | (value << 3)); }
     public override int ShinyLeaf { get => Data[0x41]; set => Data[0x41] = (byte) value; }
     // 0x42-0x43 Unused
     public override ushort Egg_LocationExtended
@@ -288,13 +288,21 @@ public sealed class PK4 : G4PKM
     {
         BK4 bk4 = ConvertTo<BK4>();
 
-        // Enforce DP content only (no PtHGSS)
-        if (Form != 0 && !PersonalTable.DP[Species].HasForms && Species != 201)
-            bk4.Form = 0;
-        if (HeldItem > Legal.MaxItemID_4_DP)
-            bk4.HeldItem = 0;
+        StripPtHGSSContent(bk4);
         bk4.RefreshChecksum();
         return bk4;
+    }
+
+    public RK4 ConvertToRK4()
+    {
+        byte[] data = Data.AsSpan(0, PokeCrypto.SIZE_4RSTORED).ToArray();
+        for (int i = PokeCrypto.SIZE_4STORED; i < PokeCrypto.SIZE_4RSTORED; i++)
+            data[i] = 0;
+
+        var rk4 = new RK4(data) { OwnershipType = RanchOwnershipType.Hayley };
+
+        rk4.RefreshChecksum();
+        return rk4;
     }
 
     public PK5 ConvertToPK5()
@@ -354,11 +362,11 @@ public sealed class PK4 : G4PKM
         // Remove HM moves; Defog should be kept if both are learned.
         // if has defog, remove whirlpool.
         bool hasDefog = HasMove((int) Move.Defog);
-        var banned = hasDefog ? Legal.HM_HGSS : Legal.HM_DPPt;
-        if (Array.IndexOf(banned, Move1) != -1) pk5.Move1 = 0;
-        if (Array.IndexOf(banned, Move2) != -1) pk5.Move2 = 0;
-        if (Array.IndexOf(banned, Move3) != -1) pk5.Move3 = 0;
-        if (Array.IndexOf(banned, Move4) != -1) pk5.Move4 = 0;
+        var banned = LearnSource4.GetPreferredTransferHMs(hasDefog);
+        if (banned.Contains(Move1)) pk5.Move1 = 0;
+        if (banned.Contains(Move2)) pk5.Move2 = 0;
+        if (banned.Contains(Move3)) pk5.Move3 = 0;
+        if (banned.Contains(Move4)) pk5.Move4 = 0;
         pk5.FixMoves();
 
         // D/P(not Pt)/HG/SS created Shedinja forget to set Gender to Genderless.

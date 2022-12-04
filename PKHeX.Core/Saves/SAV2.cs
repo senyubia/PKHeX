@@ -18,7 +18,7 @@ public sealed class SAV2 : SaveFile, ILangDeviantSave, IEventFlagArray, IEventWo
     public bool Japanese { get; }
     public bool Korean { get; }
 
-    public override PersonalTable Personal { get; }
+    public override IPersonalTable Personal { get; }
     public override IReadOnlyList<ushort> HeldItems => Legal.HeldItems_GSC;
 
     public override IReadOnlyList<string> PKMExtensions => Array.FindAll(PKM.Extensions, f =>
@@ -262,8 +262,8 @@ public sealed class SAV2 : SaveFile, ILangDeviantSave, IEventFlagArray, IEventWo
     private int SIZE_STOREDBOX => PokeList2.GetDataLength(Japanese ? PokeListType.StoredJP : PokeListType.Stored, Japanese);
     private int SIZE_STOREDPARTY => PokeList2.GetDataLength(PokeListType.Party, Japanese);
 
-    public override int MaxMoveID => Legal.MaxMoveID_2;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_2;
+    public override ushort MaxMoveID => Legal.MaxMoveID_2;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_2;
     public override int MaxAbilityID => Legal.MaxAbilityID_2;
     public override int MaxItemID => Legal.MaxItemID_2;
     public override int MaxBallID => 0; // unused
@@ -282,8 +282,8 @@ public sealed class SAV2 : SaveFile, ILangDeviantSave, IEventFlagArray, IEventWo
     public override int Generation => 2;
     public override EntityContext Context => EntityContext.Gen2;
     protected override int GiftCountMax => 0;
-    public override int OTLength => Japanese || Korean ? 5 : 7;
-    public override int NickLength => Japanese || Korean ? 5 : 10;
+    public override int MaxStringLengthOT => Japanese || Korean ? 5 : 7;
+    public override int MaxStringLengthNickname => Japanese || Korean ? 5 : 10;
     public override int BoxSlotCount => Japanese ? 30 : 20;
 
     public override bool HasParty => true;
@@ -323,8 +323,8 @@ public sealed class SAV2 : SaveFile, ILangDeviantSave, IEventFlagArray, IEventWo
 
     public override string OT
     {
-        get => GetString(Offsets.Trainer1 + 2, (Korean ? 2 : 1) * OTLength);
-        set => SetString(Data.AsSpan(Offsets.Trainer1 + 2, (Korean ? 2 : 1) * OTLength), value.AsSpan(), 8, StringConverterOption.Clear50);
+        get => GetString(Offsets.Trainer1 + 2, (Korean ? 2 : 1) * MaxStringLengthOT);
+        set => SetString(Data.AsSpan(Offsets.Trainer1 + 2, (Korean ? 2 : 1) * MaxStringLengthOT), value.AsSpan(), 8, StringConverterOption.Clear50);
     }
 
     public Span<byte> OT_Trash
@@ -335,8 +335,8 @@ public sealed class SAV2 : SaveFile, ILangDeviantSave, IEventFlagArray, IEventWo
 
     public string Rival
     {
-        get => GetString(Offsets.Rival, (Korean ? 2 : 1) * OTLength);
-        set => SetString(Data.AsSpan(Offsets.Rival, (Korean ? 2 : 1) * OTLength), value.AsSpan(), 8, StringConverterOption.Clear50);
+        get => GetString(Offsets.Rival, (Korean ? 2 : 1) * MaxStringLengthOT);
+        set => SetString(Data.AsSpan(Offsets.Rival, (Korean ? 2 : 1) * MaxStringLengthOT), value.AsSpan(), 8, StringConverterOption.Clear50);
     }
 
     public Span<byte> Rival_Trash
@@ -578,7 +578,7 @@ public sealed class SAV2 : SaveFile, ILangDeviantSave, IEventFlagArray, IEventWo
     // Pokédex
     protected override void SetDex(PKM pk)
     {
-        int species = pk.Species;
+        ushort species = pk.Species;
         if (species is 0 or > Legal.MaxSpeciesID_2)
             return;
         if (pk.IsEgg)
@@ -663,25 +663,25 @@ public sealed class SAV2 : SaveFile, ILangDeviantSave, IEventFlagArray, IEventWo
         set => Data[Offsets.PokedexSeen + 0x1F + 28] = (byte)value;
     }
 
-    public override bool GetSeen(int species) => GetDexFlag(Offsets.PokedexSeen, species);
-    public override bool GetCaught(int species) => GetDexFlag(Offsets.PokedexCaught, species);
-    public override void SetSeen(int species, bool seen) => SetDexFlag(Offsets.PokedexSeen, species, seen);
+    public override bool GetSeen(ushort species) => GetDexFlag(Offsets.PokedexSeen, species);
+    public override bool GetCaught(ushort species) => GetDexFlag(Offsets.PokedexCaught, species);
+    public override void SetSeen(ushort species, bool seen) => SetDexFlag(Offsets.PokedexSeen, species, seen);
 
-    public override void SetCaught(int species, bool caught)
+    public override void SetCaught(ushort species, bool caught)
     {
         SetDexFlag(Offsets.PokedexCaught, species, caught);
         if (caught && species == (int)Species.Unown)
             SetUnownFormFlags();
     }
 
-    private bool GetDexFlag(int region, int species)
+    private bool GetDexFlag(int region, ushort species)
     {
         int bit = species - 1;
         int ofs = bit >> 3;
         return GetFlag(region + ofs, bit & 7);
     }
 
-    private void SetDexFlag(int region, int species, bool value)
+    private void SetDexFlag(int region, ushort species, bool value)
     {
         int bit = species - 1;
         int ofs = bit >> 3;

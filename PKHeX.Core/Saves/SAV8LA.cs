@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace PKHeX.Core;
@@ -63,8 +63,8 @@ public sealed class SAV8LA : SaveFile, ISaveBlock8LA, ISCBlockArray, ISaveFileRe
     public override int MaxEV => 252;
     public override int Generation => 8;
     public override EntityContext Context => EntityContext.Gen8a;
-    public override int OTLength => 12;
-    public override int NickLength => 12;
+    public override int MaxStringLengthOT => 12;
+    public override int MaxStringLengthNickname => 12;
 
     public override bool ChecksumsValid => true;
     public override string ChecksumInfo => string.Empty;
@@ -85,8 +85,8 @@ public sealed class SAV8LA : SaveFile, ISaveBlock8LA, ISCBlockArray, ISaveFileRe
     protected override void SetChecksums() { } // None!
     protected override byte[] GetFinalData() => SwishCrypto.Encrypt(AllBlocks);
 
-    public override PersonalTable Personal => PersonalTable.LA;
-    public override IReadOnlyList<ushort> HeldItems => Legal.HeldItems_SWSH;
+    public override IPersonalTable Personal => PersonalTable.LA;
+    public override IReadOnlyList<ushort> HeldItems => Legal.HeldItems_LA;
 
     protected override SaveFile CloneInternal()
     {
@@ -96,8 +96,8 @@ public sealed class SAV8LA : SaveFile, ISaveBlock8LA, ISCBlockArray, ISaveFileRe
         return new SAV8LA(blockCopy);
     }
 
-    public override int MaxMoveID => Legal.MaxMoveID_8a;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_8a;
+    public override ushort MaxMoveID => Legal.MaxMoveID_8a;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_8a;
     public override int MaxItemID => Legal.MaxItemID_8a;
     public override int MaxBallID => Legal.MaxBallID_8a;
     public override int MaxGameID => Legal.MaxGameID_8a;
@@ -115,7 +115,7 @@ public sealed class SAV8LA : SaveFile, ISaveBlock8LA, ISCBlockArray, ISaveFileRe
     public PokedexSave8a PokedexSave => Blocks.PokedexSave;
     public BoxLayout8a BoxLayout => Blocks.BoxLayout;
     public MyItem8a Items => Blocks.Items;
-    public AdventureStart8a AdventureStart => Blocks.AdventureStart;
+    public Epoch1970Value AdventureStart => Blocks.AdventureStart;
     public LastSaved8a LastSaved => Blocks.LastSaved;
     public PlayTime8a Played => Blocks.Played;
     public AreaSpawnerSet8a AreaSpawners => new(Blocks.GetBlock(SaveBlockAccessor8LA.KSpawners));
@@ -166,13 +166,13 @@ public sealed class SAV8LA : SaveFile, ISaveBlock8LA, ISCBlockArray, ISaveFileRe
         PokedexSave.OnPokeGet_TradeWithoutEvolution(pk);
     }
 
-    public override bool GetCaught(int species)
+    public override bool GetCaught(ushort species)
     {
         if (species > Personal.MaxSpeciesID)
             return false;
 
         var formCount = Personal[species].FormCount;
-        for (var form = 0; form < formCount; form++)
+        for (byte form = 0; form < formCount; form++)
         {
             if (PokedexSave.HasAnyPokeObtainFlags(species, form))
                 return true;
@@ -180,7 +180,7 @@ public sealed class SAV8LA : SaveFile, ISaveBlock8LA, ISCBlockArray, ISaveFileRe
         return false;
     }
 
-    public override bool GetSeen(int species) => PokedexSave.HasPokeEverBeenUpdated(species);
+    public override bool GetSeen(ushort species) => PokedexSave.HasPokeEverBeenUpdated(species);
 
     // Inventory
     public override IReadOnlyList<InventoryPouch> Inventory { get => Items.Inventory; set => Items.Inventory = value; }

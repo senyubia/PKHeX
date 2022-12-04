@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using static PKHeX.Core.LegalityCheckStrings;
 using static PKHeX.Core.Ball;
 
@@ -22,7 +21,10 @@ public sealed class BallVerifier : Verifier
 
     private static int IsReplacedBall(IVersion enc, PKM pk) => pk switch
     {
+        // Trading from PLA origin -> SW/SH will replace the Legends: Arceus ball with a regular Poké Ball
         PK8 when enc.Version == GameVersion.PLA => (int)Poke,
+
+        // No replacement done.
         _ => (int)None,
     };
 
@@ -54,17 +56,18 @@ public sealed class BallVerifier : Verifier
         var pk = data.Entity;
         if (pk.Species == (int)Species.Shedinja && enc.Species != (int)Species.Shedinja) // Shedinja. For gen3, copy the ball from Nincada
         {
-            // Only Gen3 origin Shedinja can copy the wild ball.
+            // Only a Gen3 origin Shedinja can copy the wild ball.
             // Evolution chains will indicate if it could have existed as Shedinja in Gen3.
             // The special move verifier has a similar check!
-            if (pk.HGSS && pk.Ball == (int)Sport) // Can evolve in DP to retain the HG/SS ball -- not able to be captured in any other ball
+            if (pk.HGSS && pk.Ball == (int)Sport) // Can evolve in DP to retain the HG/SS ball (separate byte) -- not able to be captured in any other ball
                 return VerifyBallEquals(data, (int)Sport);
-            if (Info.Generation != 3 || Info.EvoChainsAllGens.Gen3.Length != 2)
-                return VerifyBallEquals(data, (int)Poke); // Pokeball Only
+            if (Info.Generation != 3 || Info.EvoChainsAllGens.Gen3.Length != 2) // not evolved in Gen3 Nincada->Shedinja
+                return VerifyBallEquals(data, (int)Poke); // Poké ball Only
         }
 
-        if (pk.Ball == (int)Heavy && BallBreedLegality.AlolanCaptureNoHeavyBall.Contains(enc.Species) && !enc.EggEncounter && pk.SM)
-            return GetInvalid(LBallHeavy); // Heavy Ball, can inherit if from egg (USUM fixed catch rate calc)
+        // Capturing with Heavy Ball is impossible in Sun/Moon for specific species.
+        if (pk.Ball == (int)Heavy && pk.SM && enc is not EncounterEgg && BallBreedLegality.AlolanCaptureNoHeavyBall.Contains(enc.Species))
+            return GetInvalid(LBallHeavy); // Heavy Ball, can inherit if from egg (US/UM fixed catch rate calc)
 
         return enc switch
         {
@@ -78,7 +81,7 @@ public sealed class BallVerifier : Verifier
 
     private CheckResult VerifyBallMysteryGift(LegalityAnalysis data, MysteryGift g)
     {
-        if (g.Generation == 4 && g.Species == (int)Species.Manaphy && g.Ball == 0) // there is no ball data in Manaphy Mystery Gift from Gen4
+        if (g.Generation == 4 && g.Species == (int)Species.Manaphy && g.Ball == 0) // there is no ball data in Manaphy PGT Mystery Gift from Gen4
             return VerifyBallEquals(data, (int)Poke); // Pokeball
         return VerifyBallEquals(data, g.Ball);
     }
@@ -113,11 +116,13 @@ public sealed class BallVerifier : Verifier
         };
     }
 
-    private CheckResult VerifyBallInherited(LegalityAnalysis data) => data.Info.Generation switch
+    private CheckResult VerifyBallInherited(LegalityAnalysis data) => data.Info.EncounterMatch.Context switch
     {
-        6 => VerifyBallEggGen6(data), // Gen6 Inheritance Rules
-        7 => VerifyBallEggGen7(data), // Gen7 Inheritance Rules
-        8 => data.Entity.BDSP ? VerifyBallEggGen8BDSP(data) : VerifyBallEggGen8(data),
+        EntityContext.Gen6 => VerifyBallEggGen6(data), // Gen6 Inheritance Rules
+        EntityContext.Gen7 => VerifyBallEggGen7(data), // Gen7 Inheritance Rules
+        EntityContext.Gen8 => VerifyBallEggGen8(data),
+        EntityContext.Gen8b => VerifyBallEggGen8BDSP(data),
+        EntityContext.Gen9 => VerifyBallEggGen9(data),
         _ => NONE,
     };
 
@@ -128,7 +133,7 @@ public sealed class BallVerifier : Verifier
             return GetValid(LBallEnc); // Poké Ball
 
         var enc = data.EncounterMatch;
-        int species = enc.Species;
+        var species = enc.Species;
         if (pk.Gender == 2 || BallBreedLegality.BreedMaleOnly6.Contains(species)) // Genderless
             return VerifyBallEquals(data, (int)Poke); // Must be Pokéball as ball can only pass via mother (not Ditto!)
 
@@ -176,14 +181,14 @@ public sealed class BallVerifier : Verifier
         {
             if (BallBreedLegality.Ban_Gen3Ball.Contains(species))
                 return GetInvalid(LBallSpecies);
-            if (BallBreedLegality.Ban_Gen3BallHidden.Contains(species | (enc.Form << 11)) && IsHiddenAndNotPossible(pk))
+            if (BallBreedLegality.Ban_Gen3BallHidden.Contains((ushort)(species | (enc.Form << 11))) && IsHiddenAndNotPossible(pk))
                 return GetInvalid(LBallAbility);
             return GetValid(LBallSpeciesPass);
         }
 
         if (species > 650 && species != 700) // Sylveon
         {
-            if (BallUseLegality.WildPokeballs6.Contains(pk.Ball))
+            if (IsBallPermitted(BallUseLegality.WildPokeballs6, pk.Ball))
                 return GetValid(LBallSpeciesPass);
             return GetInvalid(LBallSpecies);
         }
@@ -200,7 +205,7 @@ public sealed class BallVerifier : Verifier
         if (pk.Ball == (int)Poke)
             return GetValid(LBallEnc); // Poké Ball
 
-        int species = data.EncounterMatch.Species;
+        var species = data.EncounterMatch.Species;
         if (species is >= 722 and <= 730) // G7 Starters
             return VerifyBallEquals(data, (int)Poke);
 
@@ -218,7 +223,7 @@ public sealed class BallVerifier : Verifier
         {
             if (!BallBreedLegality.Inherit_Apricorn7.Contains(species))
                 return GetInvalid(LBallSpecies);
-            if (BallBreedLegality.Ban_NoHidden7Apricorn.Contains(species | (pk.Form << 11)) && IsHiddenAndNotPossible(pk))
+            if (BallBreedLegality.Ban_NoHidden7Apricorn.Contains((ushort)(species | (pk.Form << 11))) && IsHiddenAndNotPossible(pk))
                 return GetInvalid(LBallAbility);
             return GetValid(LBallSpeciesPass);
         }
@@ -273,7 +278,7 @@ public sealed class BallVerifier : Verifier
 
     private CheckResult VerifyBallEggGen8BDSP(LegalityAnalysis data)
     {
-        int species = data.EncounterMatch.Species;
+        var species = data.EncounterMatch.Species;
         if (species == (int)Species.Phione)
             return VerifyBallEquals(data, (int)Poke);
 
@@ -283,7 +288,7 @@ public sealed class BallVerifier : Verifier
         var pk = data.Entity;
         Ball ball = (Ball)pk.Ball;
         var balls = BallUseLegality.GetWildBalls(8, GameVersion.BDSP);
-        if (balls.Contains((int)ball))
+        if (IsBallPermitted(balls, (int)ball))
             return GetValid(LBallSpeciesPass);
 
         if (species is (int)Species.Spinda)
@@ -292,7 +297,7 @@ public sealed class BallVerifier : Verifier
         // Cross-game inheritance
         if (IsGalarCatchAndBreed(species))
         {
-            if (BallUseLegality.WildPokeballs8.Contains(pk.Ball))
+            if (IsBallPermitted(BallUseLegality.WildPokeballs8, (int)ball))
                 return GetValid(LBallSpeciesPass);
         }
 
@@ -308,7 +313,7 @@ public sealed class BallVerifier : Verifier
         {
             if (!BallBreedLegality.Inherit_Apricorn7.Contains(species))
                 return GetInvalid(LBallSpecies);
-            if (BallBreedLegality.Ban_NoHidden8Apricorn.Contains(species | (pk.Form << 11)) && IsHiddenAndNotPossible(pk)) // lineage is 3->2->origin
+            if (BallBreedLegality.Ban_NoHidden8Apricorn.Contains((ushort)(species | (pk.Form << 11))) && IsHiddenAndNotPossible(pk)) // lineage is 3->2->origin
                 return GetInvalid(LBallAbility);
             return GetValid(LBallSpeciesPass);
         }
@@ -360,13 +365,13 @@ public sealed class BallVerifier : Verifier
         if (pk.Ball == (int)Poke)
             return GetValid(LBallEnc); // Poké Ball
 
-        int species = data.EncounterMatch.Species;
+        var species = data.EncounterMatch.Species;
         if (species is >= (int)Species.Grookey and <= (int)Species.Inteleon) // G8 Starters
             return VerifyBallEquals(data, (int)Poke);
 
         if (IsGalarCatchAndBreed(species))
         {
-            if (BallUseLegality.WildPokeballs8.Contains(pk.Ball))
+            if (IsBallPermitted(BallUseLegality.WildPokeballs8, pk.Ball))
                 return GetValid(LBallSpeciesPass);
             if (species >= (int)Species.Grookey)
                 return GetInvalid(LBallSpecies);
@@ -386,7 +391,7 @@ public sealed class BallVerifier : Verifier
         {
             if (!BallBreedLegality.Inherit_Apricorn7.Contains(species))
                 return GetInvalid(LBallSpecies);
-            if (BallBreedLegality.Ban_NoHidden8Apricorn.Contains(species | (pk.Form << 11)) && IsHiddenAndNotPossible(pk)) // lineage is 3->2->origin
+            if (BallBreedLegality.Ban_NoHidden8Apricorn.Contains((ushort)(species | (pk.Form << 11))) && IsHiddenAndNotPossible(pk)) // lineage is 3->2->origin
                 return GetInvalid(LBallAbility);
             return GetValid(LBallSpeciesPass);
         }
@@ -440,21 +445,34 @@ public sealed class BallVerifier : Verifier
         return NONE;
     }
 
+    private CheckResult VerifyBallEggGen9(LegalityAnalysis data)
+    {
+        var species = data.EncounterMatch.Species;
+        if (species is >= (int)Species.Sprigatito and <= (int)Species.Quaquaval) // G9 Starters
+            return VerifyBallEquals(data, (int)Poke);
+
+        var pk = data.Entity;
+        if (IsBallPermitted(BallUseLegality.WildPokeballs9, pk.Ball))
+            return GetValid(LBallSpeciesPass);
+        return NONE;
+    }
+
     private static bool IsHiddenAndNotPossible(PKM pk)
     {
         if (pk.AbilityNumber != 4)
             return false;
-        return !AbilityVerifier.CanAbilityPatch(pk.Format, pk.PersonalInfo.Abilities, pk.Species);
+        var abilities = (IPersonalAbility12H)pk.PersonalInfo;
+        return !AbilityVerifier.CanAbilityPatch(pk.Format, abilities, pk.Species);
     }
 
-    private static bool IsGalarCatchAndBreed(int species)
+    private static bool IsGalarCatchAndBreed(ushort species)
     {
         if (species is >= (int)Species.Grookey and <= (int)Species.Inteleon) // starter
             return false;
 
         // Everything breed-able that is in the Galar Dex can be captured in-game.
         var pt = PersonalTable.SWSH;
-        var pi = (PersonalInfoSWSH) pt.GetFormEntry(species, 0);
+        var pi = pt.GetFormEntry(species, 0);
         if (pi.IsInDex)
             return true;
 
@@ -468,7 +486,14 @@ public sealed class BallVerifier : Verifier
     }
 
     private CheckResult VerifyBallEquals(LegalityAnalysis data, int ball) => GetResult(ball == data.Entity.Ball);
-    private CheckResult VerifyBallEquals(LegalityAnalysis data, HashSet<int> balls) => GetResult(balls.Contains(data.Entity.Ball));
-    private CheckResult VerifyBallEquals(LegalityAnalysis data, ICollection<int> balls) => GetResult(balls.Contains(data.Entity.Ball));
+    private CheckResult VerifyBallEquals(LegalityAnalysis data, ulong permit) => GetResult(IsBallPermitted(permit, data.Entity.Ball));
+
+    private static bool IsBallPermitted(ulong permit, int ball)
+    {
+        if ((uint)ball >= 64)
+            return false;
+        return (permit & (1ul << ball)) != 0;
+    }
+
     private CheckResult GetResult(bool valid) => valid ? GetValid(LBallEnc) : GetInvalid(LBallEncMismatch);
 }

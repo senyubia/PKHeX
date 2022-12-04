@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace PKHeX.Core;
@@ -8,6 +8,8 @@ namespace PKHeX.Core;
 /// </summary>
 public static class SpeciesName
 {
+    private const int LatestGeneration = PKX.Generation;
+
     /// <summary>
     /// Species name lists indexed by the <see cref="LanguageID"/> value.
     /// </summary>
@@ -48,7 +50,7 @@ public static class SpeciesName
     /// <summary>
     /// <see cref="PKM.Nickname"/> to <see cref="Species"/> table for all <see cref="LanguageID"/> values.
     /// </summary>
-    public static readonly IReadOnlyList<Dictionary<string, int>> SpeciesDict = Util.GetMultiDictionary(SpeciesLang);
+    public static readonly IReadOnlyList<Dictionary<string, int>> SpeciesDict = Util.GetMultiDictionary(SpeciesLang, 1);
 
     /// <summary>
     /// Gets a Pokémon's default name for the desired language ID.
@@ -57,7 +59,7 @@ public static class SpeciesName
     /// <param name="language">Language ID of the Pokémon</param>
     /// <returns>The Species name if within expected range, else an empty string.</returns>
     /// <remarks>Should only be used externally for message displays; for accurate in-game names use <see cref="GetSpeciesNameGeneration"/>.</remarks>
-    public static string GetSpeciesName(int species, int language)
+    public static string GetSpeciesName(ushort species, int language)
     {
         if ((uint)language >= SpeciesLang.Count)
             return string.Empty;
@@ -79,17 +81,25 @@ public static class SpeciesName
     /// <param name="language">Language ID of the Pokémon</param>
     /// <param name="generation">Generation specific formatting option</param>
     /// <returns>Generation specific default species name</returns>
-    public static string GetSpeciesNameGeneration(int species, int language, int generation)
+    public static string GetSpeciesNameGeneration(ushort species, int language, int generation) => generation switch
     {
-        return generation switch
-        {
-            <= 4 => GetSpeciesName1234(species, language, generation),
-            7 when language == (int) LanguageID.ChineseS => GetSpeciesName7ZH(species, language),
-            _ => GetSpeciesName(species, language),
-        };
-    }
+        <= 4 => GetSpeciesName1234(species, language, generation),
+        7 when language == (int) LanguageID.ChineseS => GetSpeciesName7ZH(species, language),
+        _ => GetSpeciesName(species, language),
+    };
 
-    private static string GetSpeciesName1234(int species, int language, int generation)
+    /// <summary>
+    /// Gets a Pokémon's egg name for the desired language ID and generation.
+    /// </summary>
+    /// <param name="language">Language ID of the Pokémon</param>
+    /// <param name="generation">Generation specific formatting option</param>
+    public static string GetEggName(int language, int generation = LatestGeneration) => generation switch
+    {
+        <= 4 => GetEggName1234(0, language, generation),
+        _ => (uint)language >= EggNames.Length ? string.Empty : EggNames[language],
+    };
+
+    private static string GetSpeciesName1234(ushort species, int language, int generation)
     {
         if (species == 0)
             return GetEggName1234(species, language, generation);
@@ -127,7 +137,7 @@ public static class SpeciesName
         return new string(result.ToArray());
     }
 
-    private static string GetEggName1234(int species, int language, int generation)
+    private static string GetEggName1234(ushort species, int language, int generation)
     {
         if (generation == 3)
             return "タマゴ"; // All Gen3 eggs are treated as JPN eggs.
@@ -156,7 +166,7 @@ public static class SpeciesName
     /// We don't differentiate patch revisions, just generation; Gen8 will return the latest localization.
     /// Gen8 did revise CHT species names, but only for Barraskewda, Urshifu, and Zarude. These species are new (Gen8); we can just use the latest.
     /// </remarks>
-    private static string GetSpeciesName7ZH(int species, int language) => species switch
+    private static string GetSpeciesName7ZH(ushort species, int language) => species switch
     {
         // Revised in DLC1 - Isle of Armor
         // https://cn.portal-pokemon.com/topics/event/200323190120_post_19.html
@@ -183,7 +193,7 @@ public static class SpeciesName
     /// <param name="nickname">Current name</param>
     /// <param name="generation">Generation specific formatting option</param>
     /// <returns>True if it does not match any language name, False if not nicknamed</returns>
-    public static bool IsNicknamedAnyLanguage(int species, string nickname, int generation = PKX.Generation)
+    public static bool IsNicknamedAnyLanguage(ushort species, string nickname, int generation = LatestGeneration)
     {
         var langs = Language.GetAvailableGameLanguages(generation);
         foreach (var language in langs)
@@ -202,7 +212,7 @@ public static class SpeciesName
     /// <param name="language">Language ID of the Pokémon</param>
     /// <param name="generation">Generation specific formatting option</param>
     /// <returns>True if it does not match the language name, False if not nicknamed (matches).</returns>
-    public static bool IsNicknamed(int species, string nickname, int language, int generation = PKX.Generation)
+    public static bool IsNicknamed(ushort species, string nickname, int language, int generation = LatestGeneration)
     {
         return GetSpeciesNameGeneration(species, language, generation) != nickname;
     }
@@ -215,7 +225,7 @@ public static class SpeciesName
     /// <param name="nickname">Current name</param>
     /// <param name="generation">Generation specific formatting option</param>
     /// <returns>Language ID if it does not match any language name, -1 if no matches</returns>
-    public static int GetSpeciesNameLanguage(int species, int priorityLanguage, string nickname, int generation = PKX.Generation)
+    public static int GetSpeciesNameLanguage(ushort species, int priorityLanguage, string nickname, int generation = LatestGeneration)
     {
         var langs = Language.GetAvailableGameLanguages(generation);
         var priorityIndex = langs.IndexOf((byte)priorityLanguage);
@@ -235,13 +245,13 @@ public static class SpeciesName
     /// <param name="nickname">Current name</param>
     /// <param name="generation">Generation specific formatting option</param>
     /// <returns>Language ID if it does not match any language name, -1 if no matches</returns>
-    public static int GetSpeciesNameLanguage(int species, string nickname, int generation = PKX.Generation)
+    public static int GetSpeciesNameLanguage(ushort species, string nickname, int generation = LatestGeneration)
     {
         var langs = Language.GetAvailableGameLanguages(generation);
         return GetSpeciesNameLanguage(species, nickname, generation, langs);
     }
 
-    private static int GetSpeciesNameLanguage(int species, string nickname, int generation, ReadOnlySpan<byte> langs)
+    private static int GetSpeciesNameLanguage(ushort species, string nickname, int generation, ReadOnlySpan<byte> langs)
     {
         foreach (var lang in langs)
         {

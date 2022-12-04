@@ -1,3 +1,5 @@
+using System;
+
 namespace PKHeX.Core;
 
 /// <summary>
@@ -7,9 +9,10 @@ namespace PKHeX.Core;
 public sealed record EncounterSlot7GO : EncounterSlotGO
 {
     public override int Generation => 7;
+    public override EntityContext Context => EntityContext.Gen7b;
     public override Ball FixedBall => Ball.None; // GO Park can override the ball; obey capture rules for LGP/E
 
-    public EncounterSlot7GO(EncounterArea7g area, int species, int form, int start, int end, Shiny shiny, Gender gender, PogoType type)
+    public EncounterSlot7GO(EncounterArea7g area, ushort species, byte form, int start, int end, Shiny shiny, Gender gender, PogoType type)
         : base(area, species, form, start, end, shiny, gender, type)
     {
     }
@@ -46,7 +49,8 @@ public sealed record EncounterSlot7GO : EncounterSlotGO
 
     protected override void SetEncounterMoves(PKM pk, GameVersion version, int level)
     {
-        var moves = MoveLevelUp.GetEncounterMoves(pk, level, GameVersion.GG);
+        Span<ushort> moves = stackalloc ushort[4];
+        MoveLevelUp.GetEncounterMoves(moves, pk, level, GameVersion.GG);
         pk.SetMoves(moves);
         pk.SetMaximumPPCurrent(moves);
     }

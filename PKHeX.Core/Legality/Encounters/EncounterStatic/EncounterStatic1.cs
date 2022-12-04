@@ -1,4 +1,4 @@
-﻿namespace PKHeX.Core;
+namespace PKHeX.Core;
 
 /// <summary>
 /// Generation 1 Static Encounter
@@ -7,6 +7,7 @@
 public record EncounterStatic1 : EncounterStatic
 {
     public override int Generation => 1;
+    public override EntityContext Context => EntityContext.Gen1;
     public sealed override byte Level { get; init; }
 
     private const int LightBallPikachuCatchRate = 0xA3; // 163
@@ -22,7 +23,7 @@ public record EncounterStatic1 : EncounterStatic
         base.ApplyDetails(tr, criteria, pk);
 
         var pk1 = (PK1) pk;
-        if (Species == (int) Core.Species.Pikachu && Version == GameVersion.YW && Level == 5 && Moves.Count == 0)
+        if (Species == (int) Core.Species.Pikachu && Version == GameVersion.YW && Level == 5 && !Moves.HasMoves)
         {
             pk1.Catch_Rate = LightBallPikachuCatchRate; // Light Ball
             return;
@@ -30,7 +31,7 @@ public record EncounterStatic1 : EncounterStatic
 
         // Encounters can have different Catch Rates (RBG vs Y)
         var table = Version == GameVersion.YW ? PersonalTable.Y : PersonalTable.RB;
-        pk1.Catch_Rate = table[Species].CatchRate;
+        pk1.Catch_Rate = (byte)table[Species].CatchRate;
     }
 
     protected override bool IsMatchLevel(PKM pk, EvoCriteria evo)

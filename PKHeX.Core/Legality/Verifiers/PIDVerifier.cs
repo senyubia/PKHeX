@@ -1,3 +1,4 @@
+using System;
 using static PKHeX.Core.LegalityCheckStrings;
 
 namespace PKHeX.Core;
@@ -18,6 +19,8 @@ public sealed class PIDVerifier : Verifier
         var enc = data.EncounterMatch;
         if (enc.Species == (int)Species.Wurmple)
             VerifyECPIDWurmple(data);
+        else if (enc.Species is (int)Species.Tandemaus or (int)Species.Dunsparce)
+            VerifyEC100(data);
 
         if (pk.PID == 0)
             data.AddLine(Get(LPIDZero, Severity.Fishy));
@@ -111,6 +114,27 @@ public sealed class PIDVerifier : Verifier
         }
     }
 
+    private static void VerifyEC100(LegalityAnalysis data)
+    {
+        var pk = data.Entity;
+        var enc = data.EncounterMatch;
+        if (pk.Species == enc.Species)
+        {
+            uint evoVal = pk.EncryptionConstant % 100;
+            bool rare = evoVal == 0;
+            var (species, form) = enc.Species switch
+            {
+                (int)Species.Tandemaus => ((ushort)Species.Maushold,    rare ? 0 : 1),
+                (int)Species.Dunsparce => ((ushort)Species.Dudunsparce, rare ? 1 : 0),
+                _ => throw new ArgumentOutOfRangeException(nameof(enc.Species)),
+            };
+            var str = GameInfo.Strings;
+            var forms = FormConverter.GetFormList(species, str.Types, str.forms, GameInfo.GenderSymbolASCII, EntityContext.Gen9);
+            var msg = string.Format(L_XRareFormEvo_0_1, forms[form], rare);
+            data.AddLine(GetValid(msg, CheckIdentifier.EC));
+        }
+    }
+
     private static void VerifyEC(LegalityAnalysis data)
     {
         var pk = data.Entity;
@@ -151,25 +175,6 @@ public sealed class PIDVerifier : Verifier
             if (xor >> 3 == 1) // 8 <= x <= 15
                 data.AddLine(Get(LTransferPIDECXor, Severity.Fishy, CheckIdentifier.EC));
         }
-    }
-
-    /// <summary>
-    /// Returns the expected <see cref="PKM.PID"/> for a Gen3-5 transfer to Gen6.
-    /// </summary>
-    /// <param name="pk">Entity to check</param>
-    /// <param name="pid">PID result</param>
-    /// <returns>True if the <see cref="pid"/> is appropriate to use.</returns>
-    public static bool GetTransferPID(PKM pk, out uint pid)
-    {
-        var ver = pk.Version;
-        if (ver is 0 or >= (int) GameVersion.X) // Gen6+ ignored
-        {
-            pid = 0;
-            return false;
-        }
-
-        var _ = GetExpectedTransferPID(pk, out pid);
-        return true;
     }
 
     /// <summary>

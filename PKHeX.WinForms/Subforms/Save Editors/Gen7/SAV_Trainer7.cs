@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
@@ -69,7 +69,7 @@ public partial class SAV_Trainer7 : Form
 
         L_Vivillon.Text = GameInfo.Strings.Species[(int)Species.Vivillon] + ":";
         CB_Vivillon.InitializeBinding();
-        CB_Vivillon.DataSource = FormConverter.GetFormList((int)Species.Vivillon, GameInfo.Strings.types, GameInfo.Strings.forms, Main.GenderSymbols, SAV.Generation);
+        CB_Vivillon.DataSource = FormConverter.GetFormList((int)Species.Vivillon, GameInfo.Strings.types, GameInfo.Strings.forms, Main.GenderSymbols, SAV.Context);
 
         if (SAV is not SAV7USUM)
             BattleStyles.RemoveAt(BattleStyles.Count - 1); // remove Nihilist
@@ -581,14 +581,16 @@ public partial class SAV_Trainer7 : Form
 
     private void UpdateBallThrowTypeLearned(object sender, EventArgs e)
     {
-        if (Loading) return;
+        if (Loading)
+            return;
         if (!LB_BallThrowTypeLearned.GetSelected(0))
             LB_BallThrowTypeLearned.SetSelected(0, true);
     }
 
     private void UpdateBallThrowTypeUnlocked(object sender, EventArgs e)
     {
-        if (Loading) return;
+        if (Loading)
+            return;
         for (int i = 0; i < 2; i++)
         {
             if (!LB_BallThrowTypeUnlocked.GetSelected(i))

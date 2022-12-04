@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace PKHeX.Core;
 
+/// <summary>
+/// Logic for finding a <see cref="Frame"/> from inputs.
+/// </summary>
 public static class FrameFinder
 {
     /// <summary>
@@ -57,30 +60,27 @@ public static class FrameFinder
         // Level
         // Nature
         // Current Seed of the frame is the Level Calc (frame before nature)
-        var list = new List<Frame>();
         foreach (var f in frames)
         {
             bool noLead = !info.AllowLeads && f.Lead != LeadRequired.None;
             if (noLead)
                 continue;
 
-            var prev = info.RNG.Prev(f.Seed); // ESV
+            var prev = LCRNG.Prev(f.Seed); // ESV
             var rand = prev >> 16;
             f.RandESV = rand;
             f.RandLevel = f.Seed >> 16;
-            f.OriginSeed = info.RNG.Prev(prev);
+            f.OriginSeed = LCRNG.Prev(prev);
             if (f.Lead != LeadRequired.CuteCharm) // needs proc checking
                 yield return f;
 
             // Generate frames for other slots after the regular slots
             if (info.AllowLeads && (f.Lead is LeadRequired.CuteCharm or LeadRequired.None))
-                list.Add(f);
-        }
-        foreach (var f in list)
-        {
-            var leadframes = GenerateLeadSpecificFrames3(f, info);
-            foreach (var frame in leadframes)
-                yield return frame;
+            {
+                var leadframes = GenerateLeadSpecificFrames3(f, info);
+                foreach (var frame in leadframes)
+                    yield return frame;
+            }
         }
     }
 
@@ -91,9 +91,9 @@ public static class FrameFinder
         // 3 different rand places
         LeadRequired lead;
         var prev0 = f.Seed; // 0
-        var prev1 = info.RNG.Prev(f.Seed); // -1
-        var prev2 = info.RNG.Prev(prev1); // -2
-        var prev3 = info.RNG.Prev(prev2); // -3
+        var prev1 = LCRNG.Prev(f.Seed); // -1
+        var prev2 = LCRNG.Prev(prev1); // -2
+        var prev3 = LCRNG.Prev(prev2); // -3
 
         // Rand call raw values
         var p0 = prev0 >> 16;
@@ -157,33 +157,34 @@ public static class FrameFinder
 
     private static IEnumerable<Frame> RefineFrames4(IEnumerable<Frame> frames, FrameGenerator info)
     {
-        var list = new List<Frame>();
         foreach (var f in frames)
         {
             // Current Seed of the frame is the ESV.
             var rand = f.Seed >> 16;
             f.RandESV = rand;
             f.RandLevel = rand; // unused
-            f.OriginSeed = info.RNG.Prev(f.Seed);
+            f.OriginSeed = LCRNG.Prev(f.Seed);
             yield return f;
+
+            if (f.Lead == LeadRequired.None)
+            {
+                var leadframes = GenerateLeadSpecificFrames4(f, info);
+                foreach (var frame in leadframes)
+                    yield return frame;
+            }
 
             // Create a copy for level; shift ESV and origin back
             var esv = f.OriginSeed >> 16;
-            var origin = info.RNG.Prev(f.OriginSeed);
+            var origin = LCRNG.Prev(f.OriginSeed);
             var withLevel = info.GetFrame(f.Seed, f.Lead | LeadRequired.UsesLevelCall, esv, f.RandLevel, origin);
             yield return withLevel;
 
-            if (f.Lead != LeadRequired.None)
-                continue;
-
-            // Generate frames for other slots after the regular slots
-            list.Add(f);
-        }
-        foreach (var f in list)
-        {
-            var leadframes = GenerateLeadSpecificFrames4(f, info);
-            foreach (var frame in leadframes)
-                yield return frame;
+            if (f.Lead == LeadRequired.None)
+            {
+                var leadframes = GenerateLeadSpecificFrames4(withLevel, info);
+                foreach (var frame in leadframes)
+                    yield return frame;
+            }
         }
     }
 
@@ -191,9 +192,9 @@ public static class FrameFinder
     {
         LeadRequired lead;
         var prev0 = f.Seed; // 0
-        var prev1 = info.RNG.Prev(f.Seed); // -1
-        var prev2 = info.RNG.Prev(prev1); // -2
-        var prev3 = info.RNG.Prev(prev2); // -3
+        var prev1 = LCRNG.Prev(f.Seed); // -1
+        var prev2 = LCRNG.Prev(prev1); // -2
+        var prev3 = LCRNG.Prev(prev2); // -3
 
         // Rand call raw values
         var p0 = prev0 >> 16;
@@ -287,12 +288,12 @@ public static class FrameFinder
             if (!sync && !reg) // doesn't generate nature frame
                 continue;
 
-            uint prev = RNG.LCRNG.Prev(s);
+            uint prev = LCRNG.Prev(s);
             if (info.AllowLeads && reg) // check for failed sync
             {
                 var failsync = (info.DPPt ? prev >> 31 : (prev >> 16) & 1) != 1;
                 if (failsync)
-                    yield return info.GetFrame(RNG.LCRNG.Prev(prev), LeadRequired.SynchronizeFail);
+                    yield return info.GetFrame(LCRNG.Prev(prev), LeadRequired.SynchronizeFail);
             }
             if (sync)
                 yield return info.GetFrame(prev, LeadRequired.Synchronize);
@@ -305,7 +306,7 @@ public static class FrameFinder
                 else
                 {
                     if (info.Safari3)
-                        prev = RNG.LCRNG.Prev(prev); // wasted RNG call
+                        prev = LCRNG.Prev(prev); // wasted RNG call
                     yield return info.GetFrame(prev, LeadRequired.None);
                 }
             }
@@ -325,22 +326,22 @@ public static class FrameFinder
         for (uint i = 0; i < 25; i++)
         {
             for (uint j = 1 + i; j < 25; j++)
-                stack.Push(seed = RNG.LCRNG.Prev(seed));
+                stack.Push(seed = LCRNG.Prev(seed));
         }
 
-        natureOrigin = RNG.LCRNG.Prev(stack.Peek());
+        natureOrigin = LCRNG.Prev(stack.Peek());
         if (natureOrigin >> (16 % 100) >= 80) // failed proc
             return false;
 
         // init natures
-        uint[] natures = new uint[25];
-        for (uint i = 0; i < 25; i++)
+        Span<byte> natures = stackalloc byte[25];
+        for (byte i = 0; i < 25; i++)
             natures[i] = i;
 
         // shuffle nature list
-        for (uint i = 0; i < 25; i++)
+        for (int i = 0; i < 25; i++)
         {
-            for (uint j = 1 + i; j < 25; j++)
+            for (int j = 1 + i; j < 25; j++)
             {
                 var s = stack.Pop();
                 if (((s >> 16) & 1) == 0)
@@ -365,7 +366,7 @@ public static class FrameFinder
                 return false; // current nature is chosen instead, fail!
         }
         // unroll once more to hit the level calc (origin with respect for beginning the nature calcs)
-        natureOrigin = RNG.LCRNG.Prev(natureOrigin);
+        natureOrigin = LCRNG.Prev(natureOrigin);
         return true;
     }
 
@@ -386,13 +387,13 @@ public static class FrameFinder
             if (nature != info.Nature)
                 continue;
 
-            var prev = RNG.LCRNG.Prev(s);
+            var prev = LCRNG.Prev(s);
             var proc = prev >> 16;
             bool charmProc = (info.DPPt ? proc / 0x5556 : proc % 3) != 0; // 2/3 odds
             if (!charmProc)
                 continue;
 
-            yield return info.GetFrame(RNG.LCRNG.Prev(prev), LeadRequired.CuteCharm);
+            yield return info.GetFrame(LCRNG.Prev(prev), LeadRequired.CuteCharm);
         }
     }
 }

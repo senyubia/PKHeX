@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using static System.Buffers.Binary.BinaryPrimitives;
@@ -8,7 +8,7 @@ namespace PKHeX.Core;
 /// <summary>
 /// Go Park Entity transferred from <see cref="GameVersion.GO"/> to <see cref="GameVersion.GG"/>.
 /// </summary>
-public sealed class GP1 : IEncounterInfo, IFixedAbilityNumber
+public sealed class GP1 : IEncounterInfo, IFixedAbilityNumber, IScaledSizeReadOnly
 {
     public const int SIZE = 0x1B0;
     public readonly byte[] Data;
@@ -18,6 +18,7 @@ public sealed class GP1 : IEncounterInfo, IFixedAbilityNumber
     public byte LevelMin => Level;
     public byte LevelMax => Level;
     public int Generation => 7;
+    public EntityContext Context => EntityContext.Gen7b;
     public AbilityPermission Ability => AbilityPermission.Any12;
     public PKM ConvertToPKM(ITrainerInfo tr) => ConvertToPB7(tr);
     public PKM ConvertToPKM(ITrainerInfo tr, EncounterCriteria criteria) => ConvertToPB7(tr, criteria);
@@ -62,7 +63,7 @@ public sealed class GP1 : IEncounterInfo, IFixedAbilityNumber
     public string Username1 => Util.TrimFromZero(Encoding.ASCII.GetString(Data, 0x00, 0x10));
     public string Username2 => Util.TrimFromZero(Encoding.ASCII.GetString(Data, 0x10, 0x20));
 
-    public int Species => ReadInt32LittleEndian(Data.AsSpan(0x28));
+    public ushort Species => ReadUInt16LittleEndian(Data.AsSpan(0x28)); // s32, just read as u16
     public int CP => ReadInt32LittleEndian(Data.AsSpan(0x2C));
     public float LevelF => ReadSingleLittleEndian(Data.AsSpan(0x30));
     public byte Level => Math.Max((byte)1, (byte)Math.Round(LevelF));
@@ -105,7 +106,7 @@ public sealed class GP1 : IEncounterInfo, IFixedAbilityNumber
 
     public int Gender => Data[0x70] - 1; // M=1, F=2, G=3 ;; shift down by 1.
 
-    public int Form => Data[0x72];
+    public byte Form => Data[0x72];
     public bool IsShiny => Data[0x73] == 1;
 
     // https://bulbapedia.bulbagarden.net/wiki/List_of_moves_in_Pok%C3%A9mon_GO
@@ -189,8 +190,9 @@ public sealed class GP1 : IEncounterInfo, IFixedAbilityNumber
         else if (isShiny)
             pk.PID ^= 0x1000_0000;
 
-        var moves = MoveLevelUp.GetEncounterMoves(pk, Level, GameVersion.GO);
-        pk.Moves = moves;
+        Span<ushort> moves = stackalloc ushort[4];
+        MoveLevelUp.GetEncounterMoves(moves, pk, pk.CurrentLevel, GameVersion.GO);
+        pk.SetMoves(moves);
         pk.SetMaximumPPCurrent(moves);
         pk.OT_Friendship = pk.PersonalInfo.BaseFriendship;
 

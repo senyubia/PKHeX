@@ -23,7 +23,7 @@ public sealed class SAV4Pt : SAV4Sinnoh
 
     public override Zukan4 Dex { get; }
     protected override SAV4 CloneInternal4() => State.Exportable ? new SAV4Pt((byte[])Data.Clone()) : new SAV4Pt();
-    public override PersonalTable Personal => PersonalTable.Pt;
+    public override IPersonalTable Personal => PersonalTable.Pt;
     public override IReadOnlyList<ushort> HeldItems => Legal.HeldItems_Pt;
     public override int MaxItemID => Legal.MaxItemID_4_Pt;
 
@@ -116,8 +116,8 @@ public sealed class SAV4Pt : SAV4Sinnoh
 
     public override Span<byte> Rival_Trash
     {
-        get => General.AsSpan(0x27E8, OTLength * 2);
-        set { if (value.Length == OTLength * 2) value.CopyTo(General.AsSpan(0x27E8)); }
+        get => General.AsSpan(0x27E8, MaxStringLengthOT * 2);
+        set { if (value.Length == MaxStringLengthOT * 2) value.CopyTo(General.AsSpan(0x27E8)); }
     }
 
     public override int X2 { get => ReadUInt16LittleEndian(General.AsSpan(0x287E)); set => WriteUInt16LittleEndian(General.AsSpan(0x287E), (ushort)value); }

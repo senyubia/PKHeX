@@ -1,8 +1,11 @@
-﻿using System;
+using System;
 using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace PKHeX.Core;
 
+/// <summary>
+/// Side game data for <see cref="PK8"/> data transferred into HOME.
+/// </summary>
 public sealed class GameDataPK8 : HomeOptional1, IGameDataSide, IGigantamax, IDynamaxLevel, ISociability
 {
     private const int SIZE = HomeCrypto.SIZE_1GAME_PK8;
@@ -18,10 +21,10 @@ public sealed class GameDataPK8 : HomeOptional1, IGameDataSide, IGigantamax, IDy
     public bool CanGigantamax { get => Data[Offset + 0x00] != 0; set => Data[Offset + 0x00] = (byte)(value ? 1 : 0); }
     public uint Sociability { get => ReadUInt32LittleEndian(Data.AsSpan(Offset + 0x01)); set => WriteUInt32LittleEndian(Data.AsSpan(Offset + 0x01), value); }
 
-    public int Move1 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x05)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x05), (ushort)value); }
-    public int Move2 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x07)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x07), (ushort)value); }
-    public int Move3 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x09)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x09), (ushort)value); }
-    public int Move4 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x0B)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x0B), (ushort)value); }
+    public ushort Move1 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x05)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x05), value); }
+    public ushort Move2 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x07)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x07), value); }
+    public ushort Move3 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x09)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x09), value); }
+    public ushort Move4 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x0B)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x0B), value); }
 
     public int Move1_PP { get => Data[Offset + 0x0D]; set => Data[Offset + 0x0D] = (byte)value; }
     public int Move2_PP { get => Data[Offset + 0x0E]; set => Data[Offset + 0x0E] = (byte)value; }
@@ -32,10 +35,10 @@ public sealed class GameDataPK8 : HomeOptional1, IGameDataSide, IGigantamax, IDy
     public int Move3_PPUps { get => Data[Offset + 0x13]; set => Data[Offset + 0x13] = (byte)value; }
     public int Move4_PPUps { get => Data[Offset + 0x14]; set => Data[Offset + 0x14] = (byte)value; }
 
-    public int RelearnMove1 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x15)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x15), (ushort)value); }
-    public int RelearnMove2 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x17)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x17), (ushort)value); }
-    public int RelearnMove3 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x19)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x19), (ushort)value); }
-    public int RelearnMove4 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x1B)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x1B), (ushort)value); }
+    public ushort RelearnMove1 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x15)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x15), value); }
+    public ushort RelearnMove2 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x17)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x17), value); }
+    public ushort RelearnMove3 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x19)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x19), value); }
+    public ushort RelearnMove4 { get => ReadUInt16LittleEndian(Data.AsSpan(Offset + 0x1B)); set => WriteUInt16LittleEndian(Data.AsSpan(Offset + 0x1B), value); }
     public byte DynamaxLevel { get => Data[Offset + 0x1D]; set => Data[Offset + 0x1D] = value; }
 
     public bool GetPokeJobFlag(int index)
@@ -54,7 +57,7 @@ public sealed class GameDataPK8 : HomeOptional1, IGameDataSide, IGigantamax, IDy
         FlagUtil.SetFlag(Data, Offset + 0x1E + ofs, index & 7, value);
     }
 
-    public bool GetPokeJobFlagAny() => Array.FindIndex(Data, Offset + 0x1E, 14, z => z != 0) >= 0;
+    public bool GetPokeJobFlagAny() => Array.FindIndex(Data, Offset + 0x1E, 14, static z => z != 0) >= 0;
     public byte Fullness { get => Data[Offset + 0x2C]; set => Data[Offset + 0x2C] = value; }
 
     public bool GetMoveRecordFlag(int index)
@@ -73,7 +76,7 @@ public sealed class GameDataPK8 : HomeOptional1, IGameDataSide, IGigantamax, IDy
         FlagUtil.SetFlag(Data, Offset + 0x2D + ofs, index & 7, value);
     }
 
-    public bool GetMoveRecordFlagAny() => Array.FindIndex(Data, Offset + 0x2D, 14, z => z != 0) >= 0;
+    public bool GetMoveRecordFlagAny() => Array.FindIndex(Data, Offset + 0x2D, 14, static z => z != 0) >= 0;
 
     public int Palma { get => ReadInt32LittleEndian(Data.AsSpan(Offset + 0x3B)); set => WriteInt32LittleEndian(Data.AsSpan(Offset + 0x3B), value); }
     public int Ball { get => Data[Offset + 0x3F]; set => Data[Offset + 0x3F] = (byte)value; }
@@ -84,7 +87,7 @@ public sealed class GameDataPK8 : HomeOptional1, IGameDataSide, IGigantamax, IDy
 
     #region Conversion
 
-    public PersonalInfo GetPersonalInfo(int species, int form) => PersonalTable.SWSH.GetFormEntry(species, form);
+    public PersonalInfo GetPersonalInfo(ushort species, byte form) => PersonalTable.SWSH.GetFormEntry(species, form);
 
     public void CopyTo(PK8 pk)
     {
@@ -123,7 +126,7 @@ public sealed class GameDataPK8 : HomeOptional1, IGameDataSide, IGigantamax, IDy
 
             var ball = b.Ball > (int)Core.Ball.Beast ? 4 : b.Ball;
             var ver = pkh.Version;
-            var loc = Locations.GetMetSWSH(b.Met_Location, ver);
+            var loc = Locations.GetMetSWSH((ushort)b.Met_Location, ver);
             return new GameDataPK8 { Ball = ball, Met_Location = loc, Egg_Location = loc != b.Met_Location ? Locations.HOME_SWSHBDSPEgg : b.Egg_Location };
         }
         if (pkh.DataPA8 is { } a)
@@ -133,7 +136,7 @@ public sealed class GameDataPK8 : HomeOptional1, IGameDataSide, IGigantamax, IDy
 
             var ball = a.Ball > (int)Core.Ball.Beast ? 4 : a.Ball;
             var ver = pkh.Version;
-            var loc = Locations.GetMetSWSH(a.Met_Location, ver);
+            var loc = Locations.GetMetSWSH((ushort)a.Met_Location, ver);
             return new GameDataPK8 { Ball = ball, Met_Location = loc, Egg_Location = loc != a.Met_Location ? Locations.HOME_SWSHBDSPEgg : a.Egg_Location };
         }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -127,7 +127,7 @@ public sealed class StartupSettings : IStartupSettings
     public List<string> RecentlyLoaded { get; set; } = new(MaxRecentCount);
 
     // Don't let invalid values slip into the startup version.
-    private GameVersion _defaultSaveVersion = GameVersion.PLA;
+    private GameVersion _defaultSaveVersion = PKX.Version;
     private string _language = GameLanguage.DefaultLanguage;
 
     [Browsable(false)]
@@ -270,6 +270,9 @@ public sealed class EntityEditorSettings
 {
     [LocalizedDescription("When changing the Hidden Power type, automatically maximize the IVs to ensure the highest Base Power result. Otherwise, keep the IVs as close as possible to the original.")]
     public bool HiddenPowerOnChangeMaxPower { get; set; } = true;
+
+    [LocalizedDescription("When showing the list of balls to select, show the legal balls before the illegal balls rather than sorting by Ball ID.")]
+    public bool ShowLegalBallsFirst { get; set; } = true;
 }
 
 [Serializable]
@@ -379,11 +382,23 @@ public sealed class SpriteSettings : ISpriteSettings
     [LocalizedDescription("Opacity for the Encounter Type stripe layer.")]
     public byte ShowEncounterOpacityStripe { get; set; } = 0x5F; // 0xFF opaque
 
+    [LocalizedDescription("Amount of pixels thick to show when displaying the encounter type color stripe.")]
+    public int ShowEncounterThicknessStripe { get; set; } = 4; // pixels
+
     [LocalizedDescription("Show a thin stripe to indicate the percent of level-up progress")]
     public bool ShowExperiencePercent { get; set; }
 
-    [LocalizedDescription("Amount of pixels thick to show when displaying the encounter type color stripe.")]
-    public int ShowEncounterThicknessStripe { get; set; } = 4; // pixels
+    [LocalizedDescription("Show a background to differentiate the Tera Type for PKM slots")]
+    public SpriteBackgroundType ShowTeraType { get; set; } = SpriteBackgroundType.BottomStripe;
+
+    [LocalizedDescription("Amount of pixels thick to show when displaying the Tera Type color stripe.")]
+    public int ShowTeraThicknessStripe { get; set; } = 4; // pixels
+
+    [LocalizedDescription("Opacity for the Tera Type background layer.")]
+    public byte ShowTeraOpacityBackground { get; set; } = 0xFF; // 0xFF opaque
+
+    [LocalizedDescription("Opacity for the Tera Type stripe layer.")]
+    public byte ShowTeraOpacityStripe { get; set; } = 0xAF; // 0xFF opaque
 }
 
 [Serializable]

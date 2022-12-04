@@ -3,6 +3,9 @@ using static PKHeX.Core.EvolutionType;
 
 namespace PKHeX.Core;
 
+/// <summary>
+/// Describes how an evolution can be triggered.
+/// </summary>
 public enum EvolutionType : byte
 {
     None = 0,
@@ -55,15 +58,99 @@ public enum EvolutionType : byte
     LevelUpNatureLowKey = 47, // Toxtricity
     TowerOfDarkness = 48, // Urshifu
     TowerOfWaters = 49, // Urshifu
-    UseItemFullMoon = 50, // Ursaluna
-    UseAgileStyleMoves = 51, // Wyrdeer
-    UseStrongStyleMoves = 52, // Overqwil
-    RecoilDamageMale = 53, // Basculegion-0
-    RecoilDamageFemale = 54, // Basculegion-1
+
+    LevelUpWalkStepsWith = 50,
+    LevelUpUnionCircle = 51, // Palafin
+    LevelUpInBattleEC100 = 52, // Maushold-0
+    LevelUpInBattleECElse = 53, // Maushold-1
+    LevelUpCollect999 = 54, // Gimmighoul formarg 999
+    LevelUpDefeatEquals = 55, // Kingambit
+    LevelUpUseMoveSpecial = 56, // Annihilape
+    LevelUpKnowMoveECElse = 57, // Dudunsparce-0
+    LevelUpKnowMoveEC100 = 58, // Dudunsparce-1
+
+    LevelUpRecoilDamageMale = 59, // Basculegion-0
+    LevelUpRecoilDamageFemale = 60, // Basculegion-1
+
+    Hisui = 61,
+
+    UseItemFullMoon = 90, // Ursaluna
+    UseMoveAgileStyle = 91, // Wyrdeer
+    UseMoveStrongStyle = 92, // Overqwil
 }
 
 public static class EvolutionTypeExtensions
 {
     public static bool IsTrade(this EvolutionType t) => t is Trade or TradeHeldItem or TradeShelmetKarrablast;
-    public static bool IsLevelUpRequired(this EvolutionType t) => t.ToString().StartsWith("LevelUp", StringComparison.Ordinal); // don't use this
+
+    public static bool IsLevelUpRequired(this EvolutionType type) => type switch
+    {
+        None => false,
+        LevelUpFriendship => true,
+        LevelUpFriendshipMorning => true,
+        LevelUpFriendshipNight => true,
+        LevelUp => true,
+        Trade => false,
+        TradeHeldItem => false,
+        TradeShelmetKarrablast => false,
+        UseItem => false,
+        LevelUpATK => true,
+        LevelUpAeqD => true,
+        LevelUpDEF => true,
+        LevelUpECl5 => true,
+        LevelUpECgeq5 => true,
+        LevelUpNinjask => true,
+        LevelUpShedinja => true,
+        LevelUpBeauty => true,
+        UseItemMale => false,
+        UseItemFemale => false,
+        LevelUpHeldItemDay => true,
+        LevelUpHeldItemNight => true,
+        LevelUpKnowMove => true,
+        LevelUpWithTeammate => true,
+        LevelUpMale => true,
+        LevelUpFemale => true,
+        LevelUpElectric => true,
+        LevelUpForest => true,
+        LevelUpCold => true,
+        LevelUpInverted => true,
+        LevelUpAffection50MoveType => true,
+        LevelUpMoveType => true,
+        LevelUpWeather => true,
+        LevelUpMorning => true,
+        LevelUpNight => true,
+        LevelUpFormFemale1 => true,
+        UNUSED => false,
+        LevelUpVersion => true,
+        LevelUpVersionDay => true,
+        LevelUpVersionNight => true,
+        LevelUpSummit => true,
+        LevelUpDusk => true,
+        LevelUpWormhole => true,
+        UseItemWormhole => false,
+        CriticalHitsInBattle => false,
+        HitPointsLostInBattle => false,
+        Spin => false,
+        LevelUpNatureAmped => true,
+        LevelUpNatureLowKey => true,
+        TowerOfDarkness => false,
+        TowerOfWaters => false,
+        LevelUpWalkStepsWith => true,
+        LevelUpUnionCircle => true,
+        LevelUpInBattleEC100 => true,
+        LevelUpInBattleECElse => true,
+        LevelUpCollect999 => true,
+        LevelUpDefeatEquals => true,
+        LevelUpUseMoveSpecial => true,
+        LevelUpKnowMoveECElse => true,
+        LevelUpKnowMoveEC100 => true,
+        LevelUpRecoilDamageMale => true,
+        LevelUpRecoilDamageFemale => true,
+        Hisui => false, // stubbed
+
+        UseItemFullMoon => false,
+        UseMoveAgileStyle => false,
+        UseMoveStrongStyle => false,
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
+    };
 }

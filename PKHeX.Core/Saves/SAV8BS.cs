@@ -110,11 +110,11 @@ public sealed class SAV8BS : SaveFile, ISaveFileRevision, ITrainerStatRecord, IE
 
     public override int Generation => 8;
     public override EntityContext Context => EntityContext.Gen8b;
-    public override PersonalTable Personal => PersonalTable.BDSP;
-    public override int OTLength => 12;
-    public override int NickLength => 12;
-    public override int MaxMoveID => Legal.MaxMoveID_8b;
-    public override int MaxSpeciesID => Legal.MaxSpeciesID_8b;
+    public override IPersonalTable Personal => PersonalTable.BDSP;
+    public override int MaxStringLengthOT => 12;
+    public override int MaxStringLengthNickname => 12;
+    public override ushort MaxMoveID => Legal.MaxMoveID_8b;
+    public override ushort MaxSpeciesID => Legal.MaxSpeciesID_8b;
     public override int MaxItemID => Legal.MaxItemID_8b;
     public override int MaxBallID => Legal.MaxBallID_8b;
     public override int MaxGameID => Legal.MaxGameID_8a;
@@ -285,7 +285,7 @@ public sealed class SAV8BS : SaveFile, ISaveFileRevision, ITrainerStatRecord, IE
     public string Rival
     {
         get => GetString(0x55F4, 0x1A);
-        set => SetString(Data.AsSpan(0x55F4, 0x1A), value.AsSpan(), OTLength, StringConverterOption.ClearZero);
+        set => SetString(Data.AsSpan(0x55F4, 0x1A), value.AsSpan(), MaxStringLengthOT, StringConverterOption.ClearZero);
     }
 
     public short ZoneID // map
@@ -324,8 +324,8 @@ public sealed class SAV8BS : SaveFile, ISaveFileRevision, ITrainerStatRecord, IE
     }
 
     protected override void SetDex(PKM pk) => Zukan.SetDex(pk);
-    public override bool GetCaught(int species) => Zukan.GetCaught(species);
-    public override bool GetSeen(int species) => Zukan.GetSeen(species);
+    public override bool GetCaught(ushort species) => Zukan.GetCaught(species);
+    public override bool GetSeen(ushort species) => Zukan.GetSeen(species);
 
     public override int PartyCount
     {

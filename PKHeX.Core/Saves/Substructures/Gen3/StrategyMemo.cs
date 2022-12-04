@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using static System.Buffers.Binary.BinaryPrimitives;
 
@@ -79,19 +79,19 @@ public sealed class StrategyMemoEntry
         XD = xd;
     }
 
-    public int Species
+    public ushort Species
     {
         get
         {
-            int val = ReadUInt16BigEndian(Data.AsSpan(0)) & 0x1FF;
+            var val = (ushort)(ReadUInt16BigEndian(Data.AsSpan(0)) & 0x1FF);
             return SpeciesConverter.GetG4Species(val);
         }
         set
         {
-            value = SpeciesConverter.GetG3Species(value);
-            int cval = ReadUInt16BigEndian(Data.AsSpan(0));
-            cval &= 0xE00; value &= 0x1FF; cval |= value;
-            WriteUInt16BigEndian(Data.AsSpan(0x00), (ushort)cval);
+            var val = SpeciesConverter.GetG3Species(value);
+            var cval = ReadUInt16BigEndian(Data.AsSpan(0));
+            cval &= 0xE00; val &= 0x1FF; cval |= val;
+            WriteUInt16BigEndian(Data.AsSpan(0x00), cval);
         }
     }
 
@@ -105,7 +105,8 @@ public sealed class StrategyMemoEntry
     {
         get
         {
-            if (XD) return !Flag1;
+            if (XD)
+                return !Flag1;
             return Species != 0;
         }
         set
@@ -113,7 +114,7 @@ public sealed class StrategyMemoEntry
             if (XD)
                 Flag1 = !value;
             else if (!value)
-                new byte[StrategyMemo.SIZE_ENTRY].CopyTo(Data, 0);
+                Data.AsSpan(0, StrategyMemo.SIZE_ENTRY).Clear();
         }
     }
 
@@ -121,17 +122,19 @@ public sealed class StrategyMemoEntry
     {
         get
         {
-            if (XD) return false;
+            if (XD)
+                return false;
             return Flag0 || !Flag1;
         }
         set
         {
-            if (XD) return;
+            if (XD)
+                return;
             if (!value)
                 Flag1 = true;
         }
     }
 
     public bool IsEmpty => Species == 0;
-    public bool Matches(int species, uint pid, int tid, int sid) => Species == species && PID == pid && TID == tid && SID == sid;
+    public bool Matches(ushort species, uint pid, int tid, int sid) => Species == species && PID == pid && TID == tid && SID == sid;
 }

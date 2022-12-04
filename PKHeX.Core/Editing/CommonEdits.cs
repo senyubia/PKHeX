@@ -56,7 +56,7 @@ public static class CommonEdits
     {
         if (abil < 0)
             return;
-        var index = pk.PersonalInfo.GetAbilityIndex(abil);
+        var index = pk.PersonalInfo.GetIndexOfAbility(abil);
         index = Math.Max(0, index);
         pk.SetAbilityIndex(index);
     }
@@ -170,7 +170,7 @@ public static class CommonEdits
         pk.Form = Set.Form;
         if (Set.Moves[0] != 0)
             pk.SetMoves(Set.Moves, true);
-        pk.ApplyHeldItem(Set.HeldItem, Set.Format);
+        pk.ApplyHeldItem(Set.HeldItem, Set.Context);
         pk.CurrentLevel = Set.Level;
         pk.CurrentFriendship = Set.Friendship;
         pk.SetIVs(Set.IVs);
@@ -179,15 +179,15 @@ public static class CommonEdits
         {
             // In Generation 1/2 Format sets, when IVs are not specified with a Hidden Power set, we might not have the hidden power type.
             // Under this scenario, just force the Hidden Power type.
-            if (Array.IndexOf(Set.Moves, (int)Move.HiddenPower) != -1 && pk.HPType != Set.HiddenPowerType)
+            if (Array.IndexOf(Set.Moves, (ushort)Move.HiddenPower) != -1 && pk.HPType != Set.HiddenPowerType)
             {
-                if (Array.FindIndex(Set.IVs, static z => z >= 30) != -1)
+                if (Array.Exists(Set.IVs, static iv => iv >= 30))
                     pk.SetHiddenPower(Set.HiddenPowerType);
             }
 
             // In Generation 1/2 Format sets, when EVs are not specified at all, it implies maximum EVs instead!
             // Under this scenario, just apply maximum EVs (65535).
-            if (Array.FindIndex(Set.EVs, static z => z != 0) == -1)
+            if (Array.TrueForAll(Set.EVs, static ev => ev == 0))
                 gb.MaxEVs();
             else
                 pk.SetEVs(Set.EVs);
@@ -236,9 +236,14 @@ public static class CommonEdits
         if (pk is IGigantamax c)
             c.CanGigantamax = Set.CanGigantamax;
         if (pk is IDynamaxLevel d)
-            d.DynamaxLevel = d.GetSuggestedDynamaxLevel(pk);
+            d.DynamaxLevel = d.GetSuggestedDynamaxLevel(pk, requested: Set.DynamaxLevel);
+        if (pk is ITeraType tera)
+        {
+            var type = Set.TeraType == MoveType.Any ? (MoveType)pk.PersonalInfo.Type1 : Set.TeraType;
+            tera.SetTeraType(type);
+        }
 
-        if (pk is ITechRecord8 t)
+        if (pk is ITechRecord t)
         {
             t.ClearRecordFlags();
             t.SetRecordFlags(Set.Moves);
@@ -250,7 +255,7 @@ public static class CommonEdits
             pk.Nature = pk.StatNature;
 
         var legal = new LegalityAnalysis(pk);
-        if (legal.Parsed && Array.FindIndex(legal.Info.Relearn, static z => !z.Valid) != -1)
+        if (legal.Parsed && !MoveResult.AllValid(legal.Info.Relearn))
             pk.SetRelearnMoves(legal.GetSuggestedRelearnMoves());
         pk.ResetPartyStats();
         pk.RefreshChecksum();
@@ -261,10 +266,10 @@ public static class CommonEdits
     /// </summary>
     /// <param name="pk">Pokémon to modify.</param>
     /// <param name="item">Held Item to apply</param>
-    /// <param name="format">Format required for importing</param>
-    public static void ApplyHeldItem(this PKM pk, int item, int format)
+    /// <param name="context">Format required for importing</param>
+    public static void ApplyHeldItem(this PKM pk, int item, EntityContext context)
     {
-        item = ItemConverter.GetItemForFormat(item, format, pk.Format);
+        item = ItemConverter.GetItemForFormat(item, context, pk.Context);
         pk.HeldItem = ((uint)item > pk.MaxItemID) ? 0 : item;
     }
 
@@ -336,8 +341,9 @@ public static class CommonEdits
     /// Force hatches a PKM by applying the current species name and a valid Met Location from the origin game.
     /// </summary>
     /// <param name="pk">PKM to apply hatch details to</param>
+    /// <param name="tr">Trainer to force hatch with if Version is not currently set.</param>
     /// <param name="reHatch">Re-hatch already hatched <see cref="PKM"/> inputs</param>
-    public static void ForceHatchPKM(this PKM pk, bool reHatch = false)
+    public static void ForceHatchPKM(this PKM pk, ITrainerInfo? tr = null, bool reHatch = false)
     {
         if (!pk.IsEgg && !reHatch)
             return;
@@ -346,6 +352,8 @@ public static class CommonEdits
         pk.CurrentFriendship = pk.PersonalInfo.BaseFriendship;
         if (pk.IsTradedEgg)
             pk.Egg_Location = pk.Met_Location;
+        if (pk.Version == 0)
+            pk.Version = (int)EggStateLegality.GetEggHatchVersion(pk, (GameVersion)(tr?.Game ?? RecentTrainerCache.Game));
         var loc = EncounterSuggestion.GetSuggestedEggMetLocation(pk);
         if (loc >= 0)
             pk.Met_Location = loc;

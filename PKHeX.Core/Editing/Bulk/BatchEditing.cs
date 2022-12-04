@@ -17,9 +17,10 @@ public static class BatchEditing
 {
     public static readonly Type[] Types =
     {
+        typeof (PK9),
         typeof (PK8), typeof (PA8), typeof (PB8),
         typeof (PB7),
-        typeof (PK7), typeof (PK6), typeof (PK5), typeof (PK4), typeof(BK4),
+        typeof (PK7), typeof (PK6), typeof (PK5), typeof (PK4), typeof(BK4), typeof(RK4),
         typeof (PK3), typeof (XK3), typeof (CK3),
         typeof (PK2), typeof (SK2), typeof (PK1),
     };
@@ -52,7 +53,8 @@ public static class BatchEditing
 
     private static Dictionary<string, PropertyInfo> GetPropertyDictionary(Type type, Func<Type, IEnumerable<PropertyInfo>> selector)
     {
-        var dict = new Dictionary<string, PropertyInfo>();
+        const int expectedMax = 0x200; // currently 0x160 as of 2022
+        var dict = new Dictionary<string, PropertyInfo>(expectedMax);
         var props = selector(type);
         foreach (var p in props)
         {

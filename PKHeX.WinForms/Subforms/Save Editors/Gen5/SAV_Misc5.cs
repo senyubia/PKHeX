@@ -207,7 +207,7 @@ public partial class SAV_Misc5 : Form
             for (int i = 0; i < cbr.Length; i++)
             {
                 int c = SAV.Data[ofsRoamer + 0x2E + i];
-                var d = (int)cbr[i].SelectedValue;
+                var d = (ushort)WinFormsUtil.GetIndex(cbr[i]);
 
                 if (c == d)
                     continue;
@@ -424,27 +424,31 @@ public partial class SAV_Misc5 : Form
 
     private void NUD_EntreeBlackLV_ValueChanged(object sender, EventArgs e)
     {
-        if (editing) return;
+        if (editing)
+            return;
         SetNudMax(isBlack: true);
         SetEntreeExpTooltip(isBlack: true);
     }
 
     private void NUD_EntreeWhiteLV_ValueChanged(object sender, EventArgs e)
     {
-        if (editing) return;
+        if (editing)
+            return;
         SetNudMax(isBlack: false);
         SetEntreeExpTooltip(isBlack: false);
     }
 
     private void NUD_EntreeBlackEXP_ValueChanged(object sender, EventArgs e)
     {
-        if (editing) return;
+        if (editing)
+            return;
         SetEntreeExpTooltip(isBlack: true);
     }
 
     private void NUD_EntreeWhiteEXP_ValueChanged(object sender, EventArgs e)
     {
-        if (editing) return;
+        if (editing)
+            return;
         SetEntreeExpTooltip(isBlack: false);
     }
 
@@ -499,10 +503,10 @@ public partial class SAV_Misc5 : Form
         if (LB_Slots.SelectedIndex >= 0)
             currentIndex = LB_Slots.SelectedIndex;
         var current = CurrentSlots[currentIndex];
-        CB_Species.SelectedValue = current.Species;
+        CB_Species.SelectedValue = (int)current.Species;
         SetForms(current);
         SetGenders(current);
-        CB_Move.SelectedValue = current.Move;
+        CB_Move.SelectedValue = (int)current.Move;
         CB_Gender.SelectedValue = current.Gender;
         CB_Form.SelectedIndex = CB_Form.Items.Count <= current.Form ? 0 : current.Form;
         NUD_Animation.SetValueClamped(current.Animation);
@@ -512,7 +516,7 @@ public partial class SAV_Misc5 : Form
 
     private EntreeSlot? CurrentSlot;
 
-    public static string GetSpeciesName(int species)
+    public static string GetSpeciesName(ushort species)
     {
         var arr = GameInfo.Strings.Species;
         if ((uint)species >= arr.Count)
@@ -527,14 +531,14 @@ public partial class SAV_Misc5 : Form
 
         if (sender == CB_Species)
         {
-            CurrentSlot.Species = WinFormsUtil.GetIndex(CB_Species);
+            CurrentSlot.Species = (ushort)WinFormsUtil.GetIndex(CB_Species);
             LB_Slots.Items[currentIndex] = GetSpeciesName(CurrentSlot.Species);
             SetForms(CurrentSlot);
             SetGenders(CurrentSlot);
         }
         else if (sender == CB_Move)
         {
-            CurrentSlot.Move = WinFormsUtil.GetIndex(CB_Move);
+            CurrentSlot.Move = (ushort)WinFormsUtil.GetIndex(CB_Move);
         }
         else if (sender == CB_Gender)
         {
@@ -542,7 +546,7 @@ public partial class SAV_Misc5 : Form
         }
         else if (sender == CB_Form)
         {
-            CurrentSlot.Form = CB_Form.SelectedIndex;
+            CurrentSlot.Form = (byte)CB_Form.SelectedIndex;
         }
         else if (sender == CHK_Invisible)
         {
@@ -558,7 +562,7 @@ public partial class SAV_Misc5 : Form
 
     private void SetSprite(EntreeSlot slot)
     {
-        PB_SlotPreview.Image = SpriteUtil.GetSprite(slot.Species, slot.Form, slot.Gender, 0, 0, false, false, 5);
+        PB_SlotPreview.Image = SpriteUtil.GetSprite(slot.Species, slot.Form, slot.Gender, 0, 0, false, Shiny.Never, 5);
     }
 
     private void SetGenders(EntreeSlot slot)
@@ -569,8 +573,9 @@ public partial class SAV_Misc5 : Form
 
     private void B_RandForest_Click(object sender, EventArgs e)
     {
-        var source = (SAV is SAV5BW ? Encounters5.DreamWorld_BW : Encounters5.DreamWorld_B2W2).Concat(Encounters5.DreamWorld_Common).ToList();
+        var source = (SAV is SAV5BW ? Encounters5BW.DreamWorld_BW : Encounters5B2W2.DreamWorld_B2W2).Concat(Encounters5DR.DreamWorld_Common).ToList();
         var rnd = Util.Rand;
+        Span<ushort> moves = stackalloc ushort[4];
         foreach (var s in AllSlots)
         {
             int index = rnd.Next(source.Count);
@@ -578,8 +583,11 @@ public partial class SAV_Misc5 : Form
             source.Remove(slot);
             s.Species = slot.Species;
             s.Form = slot.Form;
-            s.Move = slot.Moves.Count > 0 ? slot.Moves[rnd.Next(slot.Moves.Count)] : 0;
             s.Gender = slot.Gender == -1 ? PersonalTable.B2W2[slot.Species].RandomGender() : slot.Gender;
+
+            slot.Moves.CopyTo(moves);
+            var count = moves.Length - moves.Count((ushort)0);
+            s.Move = count == 0 ? (ushort)0 : moves[rnd.Next(count)];
         }
         ChangeArea(this, EventArgs.Empty); // refresh
         NUD_Unlocked.Value = 8;
@@ -587,7 +595,7 @@ public partial class SAV_Misc5 : Form
         System.Media.SystemSounds.Asterisk.Play();
     }
 
-    private static List<ComboItem> GetGenderChoices(int species)
+    private static List<ComboItem> GetGenderChoices(ushort species)
     {
         var pi = PersonalTable.B2W2[species];
         var list = new List<ComboItem>();
@@ -610,7 +618,7 @@ public partial class SAV_Misc5 : Form
         L_Form.Visible = CB_Form.Enabled = CB_Form.Visible = hasForms;
 
         CB_Form.InitializeBinding();
-        var list = FormConverter.GetFormList(slot.Species, GameInfo.Strings.types, GameInfo.Strings.forms, Main.GenderSymbols, SAV.Generation);
+        var list = FormConverter.GetFormList(slot.Species, GameInfo.Strings.types, GameInfo.Strings.forms, Main.GenderSymbols, SAV.Context);
         CB_Form.DataSource = new BindingSource(list, null);
     }
 

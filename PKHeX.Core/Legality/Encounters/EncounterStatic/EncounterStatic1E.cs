@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -76,9 +76,9 @@ public sealed record EncounterStatic1E : EncounterStatic1, IFixedGBLanguage
             var pk1 = (PK1)pk;
             // Amnesia Psyduck has different catch rates depending on language
             if (Species == (int)Core.Species.Psyduck)
-                pk1.Catch_Rate = pk1.Japanese ? 167 : 168;
+                pk1.Catch_Rate = pk1.Japanese ? (byte)167 : (byte)168;
             else
-                pk1.Catch_Rate = 167 + Util.Rand.Next(2); // 167 or 168
+                pk1.Catch_Rate = Util.Rand.Next(2) == 0 ? (byte)167 : (byte)168;
         }
 
         if (TID != -1)
@@ -91,8 +91,14 @@ public sealed record EncounterStatic1E : EncounterStatic1, IFixedGBLanguage
     }
 }
 
+/// <summary>
+/// Exposes info on language restriction for Gen1/2.
+/// </summary>
 public interface IFixedGBLanguage
 {
+    /// <summary>
+    /// Language restriction for the encounter template.
+    /// </summary>
     EncounterGBLanguage Language { get; }
 }
 
@@ -101,7 +107,12 @@ public interface IFixedGBLanguage
 /// </summary>
 public enum EncounterGBLanguage
 {
+    /// <summary> Can only be obtained in Japanese games. </summary>
     Japanese,
+
+    /// <summary> Can only be obtained in International (not Japanese) games. </summary>
     International,
+
+    /// <summary> Can be obtained in any localization. </summary>
     Any,
 }

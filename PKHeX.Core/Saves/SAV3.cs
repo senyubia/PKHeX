@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using static System.Buffers.Binary.BinaryPrimitives;
@@ -136,13 +136,30 @@ public abstract class SAV3 : SaveFile, ILangDeviantSave, IEventFlag37
         return base.GetFinalData();
     }
 
+    /// <summary>
+    /// Writes the active save data to both save slots (0 and 1).
+    /// </summary>
+    /// <param name="data">Destination to write to. Usually want to pass in the <see cref="SaveFile.Data"/>.</param>
+    /// <remarks>Slot 1 is not written if the binary does not contain it.</remarks>
+    public void WriteBothSaveSlots(Span<byte> data)
+    {
+        WriteSectors(data, 0);
+        SetSlotChecksums(data, 0);
+
+        if (data.Length < SaveUtil.SIZE_G3RAW) // don't update second half if it doesn't exist
+            return;
+
+        WriteSectors(data, 1);
+        SetSlotChecksums(data, 1);
+    }
+
     protected sealed override int SIZE_STORED => PokeCrypto.SIZE_3STORED;
     protected sealed override int SIZE_PARTY => PokeCrypto.SIZE_3PARTY;
     public sealed override PKM BlankPKM => new PK3();
     public sealed override Type PKMType => typeof(PK3);
 
-    public sealed override int MaxMoveID => Legal.MaxMoveID_3;
-    public sealed override int MaxSpeciesID => Legal.MaxSpeciesID_3;
+    public sealed override ushort MaxMoveID => Legal.MaxMoveID_3;
+    public sealed override ushort MaxSpeciesID => Legal.MaxSpeciesID_3;
     public sealed override int MaxAbilityID => Legal.MaxAbilityID_3;
     public sealed override int MaxItemID => Legal.MaxItemID_3;
     public sealed override int MaxBallID => Legal.MaxBallID_3;
@@ -173,8 +190,8 @@ public abstract class SAV3 : SaveFile, ILangDeviantSave, IEventFlag37
     public sealed override int Generation => 3;
     public sealed override EntityContext Context => EntityContext.Gen3;
     protected sealed override int GiftCountMax => 1;
-    public sealed override int OTLength => 7;
-    public sealed override int NickLength => 10;
+    public sealed override int MaxStringLengthOT => 7;
+    public sealed override int MaxStringLengthNickname => 10;
     public sealed override int MaxMoney => 999999;
 
     public sealed override bool HasParty => true;
@@ -190,16 +207,21 @@ public abstract class SAV3 : SaveFile, ILangDeviantSave, IEventFlag37
     private const int COUNT_SLOTSPERBOX = 30;
 
     // Checksums
-    protected sealed override void SetChecksums()
+    private static void SetSlotChecksums(Span<byte> data, int slot)
     {
-        int start = ActiveSlot * SIZE_MAIN;
+        int start = slot * SIZE_MAIN;
         int end = start + SIZE_MAIN;
         for (int ofs = start; ofs < end; ofs += SIZE_SECTOR)
         {
-            var sector = Data.AsSpan(ofs, SIZE_SECTOR);
+            var sector = data.Slice(ofs, SIZE_SECTOR);
             ushort chk = Checksums.CheckSum32(sector[..SIZE_SECTOR_USED]);
             WriteUInt16LittleEndian(sector[0xFF6..], chk);
         }
+    }
+
+    protected sealed override void SetChecksums()
+    {
+        SetSlotChecksums(Data, ActiveSlot);
 
         if (Data.Length < SaveUtil.SIZE_G3RAW) // don't update HoF for half-sizes
             return;
@@ -283,7 +305,7 @@ public abstract class SAV3 : SaveFile, ILangDeviantSave, IEventFlag37
         get => GetString(Small.AsSpan(0, 8));
         set
         {
-            int len = Japanese ? 5 : OTLength;
+            int len = Japanese ? 5 : MaxStringLengthOT;
             SetString(Small.AsSpan(0, len), value.AsSpan(), len, StringConverterOption.ClearFF);
         }
     }
@@ -459,7 +481,7 @@ public abstract class SAV3 : SaveFile, ILangDeviantSave, IEventFlag37
     #region Pokédex
     protected sealed override void SetDex(PKM pk)
     {
-        int species = pk.Species;
+        ushort species = pk.Species;
         if (species is 0 or > Legal.MaxSpeciesID_3)
             return;
         if (pk.IsEgg)
@@ -482,7 +504,7 @@ public abstract class SAV3 : SaveFile, ILangDeviantSave, IEventFlag37
     public uint DexPIDSpinda { get => ReadUInt32LittleEndian(Small.AsSpan(PokeDex + 0x8)); set => WriteUInt32LittleEndian(Small.AsSpan(PokeDex + 0x8), value); }
     public int DexUnownForm => EntityPID.GetUnownForm3(DexPIDUnown);
 
-    public sealed override bool GetCaught(int species)
+    public sealed override bool GetCaught(ushort species)
     {
         int bit = species - 1;
         int ofs = bit >> 3;
@@ -490,7 +512,7 @@ public abstract class SAV3 : SaveFile, ILangDeviantSave, IEventFlag37
         return FlagUtil.GetFlag(Small, caughtOffset + ofs, bit & 7);
     }
 
-    public sealed override void SetCaught(int species, bool caught)
+    public sealed override void SetCaught(ushort species, bool caught)
     {
         int bit = species - 1;
         int ofs = bit >> 3;
@@ -498,7 +520,7 @@ public abstract class SAV3 : SaveFile, ILangDeviantSave, IEventFlag37
         FlagUtil.SetFlag(Small, caughtOffset + ofs, bit & 7, caught);
     }
 
-    public sealed override bool GetSeen(int species)
+    public sealed override bool GetSeen(ushort species)
     {
         int bit = species - 1;
         int ofs = bit >> 3;
@@ -509,7 +531,7 @@ public abstract class SAV3 : SaveFile, ILangDeviantSave, IEventFlag37
     protected abstract int SeenOffset2 { get; }
     protected abstract int SeenOffset3 { get; }
 
-    public sealed override void SetSeen(int species, bool seen)
+    public sealed override void SetSeen(ushort species, bool seen)
     {
         int bit = species - 1;
         int ofs = bit >> 3;

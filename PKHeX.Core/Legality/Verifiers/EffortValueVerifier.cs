@@ -13,11 +13,6 @@ public sealed class EffortValueVerifier : Verifier
     public override void Verify(LegalityAnalysis data)
     {
         var pk = data.Entity;
-        if (pk is IAwakened a)
-        {
-            VerifyAwakenedValues(data, a);
-            return;
-        }
         var enc = data.EncounterMatch;
         if (pk.IsEgg)
         {
@@ -36,7 +31,7 @@ public sealed class EffortValueVerifier : Verifier
             data.AddLine(GetInvalid(LEffortAbove510));
         Span<int> evs = stackalloc int[6];
         pk.GetEVs(evs);
-        if (format >= 6 && evs.Find(ev => ev > 252) != default)
+        if (format >= 6 && evs.Find(static ev => ev > 252) != default)
             data.AddLine(GetInvalid(LEffortAbove252));
 
         const int vitaMax = 100; // Vitamin Max
@@ -45,14 +40,14 @@ public sealed class EffortValueVerifier : Verifier
             if (enc.LevelMin == 100) // only true for Gen4 and Format=4
             {
                 // Cannot EV train at level 100 -- Certain events are distributed at level 100.
-                if (evs.Find(ev => ev > vitaMax) != default) // EVs can only be increased by vitamins to a max of 100.
+                if (evs.Find(static ev => ev > vitaMax) != default) // EVs can only be increased by vitamins to a max of 100.
                     data.AddLine(GetInvalid(LEffortCap100));
             }
             else // check for gained EVs without gaining EXP -- don't check gen5+ which have wings to boost above 100.
             {
                 var growth = PersonalTable.HGSS[enc.Species].EXPGrowth;
                 var baseEXP = Experience.GetEXP(enc.LevelMin, growth);
-                if (baseEXP == pk.EXP && evs.Find(ev => ev > vitaMax) != default)
+                if (baseEXP == pk.EXP && evs.Find(static ev => ev > vitaMax) != default)
                     data.AddLine(GetInvalid(string.Format(LEffortUntrainedCap, vitaMax)));
             }
         }
@@ -64,37 +59,5 @@ public sealed class EffortValueVerifier : Verifier
             data.AddLine(Get(LEffort2Remaining, Severity.Fishy));
         else if (evs[0] != 0 && evs.Count(evs[0]) == evs.Length)
             data.AddLine(Get(LEffortAllEqual, Severity.Fishy));
-    }
-
-    private void VerifyAwakenedValues(LegalityAnalysis data, IAwakened awakened)
-    {
-        var pk = data.Entity;
-        int sum = pk.EVTotal;
-        if (sum != 0)
-            data.AddLine(GetInvalid(LEffortShouldBeZero));
-
-        if (!awakened.AwakeningAllValid())
-            data.AddLine(GetInvalid(LAwakenedCap));
-
-        var enc = data.EncounterMatch;
-
-        // go park transfers have 2 AVs for all stats.
-        if (enc is EncounterSlot7GO)
-        {
-            Span<byte> avs = stackalloc byte[6];
-            awakened.GetAVs(avs);
-            foreach (var av in avs)
-            {
-                if (av >= 2)
-                    continue;
-
-                data.AddLine(GetInvalid(string.Format(LAwakenedShouldBeValue, 2)));
-                break;
-            }
-            return;
-        }
-
-        if (awakened.AwakeningSum() == 0 && !enc.IsWithinEncounterRange(pk))
-            data.AddLine(Get(LAwakenedEXPIncreased, Severity.Fishy));
     }
 }

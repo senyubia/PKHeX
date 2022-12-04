@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -50,7 +50,7 @@ public partial class SAV_Misc3 : Form
                 cba[i].DataSource = new BindingSource(legal, null);
                 var g3Species = SAV.GetWork(0x43 + i);
                 var species = SpeciesConverter.GetG4Species(g3Species);
-                cba[i].SelectedValue = species;
+                cba[i].SelectedValue = (int)species;
             }
         }
         else
@@ -75,7 +75,7 @@ public partial class SAV_Misc3 : Form
             {
                 var species = (ushort) WinFormsUtil.GetIndex(cba[i]);
                 var g3Species = SpeciesConverter.GetG3Species(species);
-                SAV.SetWork(0x43 + i, (ushort)g3Species);
+                SAV.SetWork(0x43 + i, g3Species);
             }
         }
 
@@ -115,7 +115,7 @@ public partial class SAV_Misc3 : Form
     private void B_GetTickets_Click(object sender, EventArgs e)
     {
         var Pouches = SAV.Inventory;
-        var itemlist = GameInfo.Strings.GetItemStrings(SAV.Generation, SAV.Version).ToArray();
+        var itemlist = GameInfo.Strings.GetItemStrings(SAV.Context, SAV.Version).ToArray();
         for (int i = 0; i < itemlist.Length; i++)
         {
             if (string.IsNullOrEmpty(itemlist[i]))
@@ -142,7 +142,7 @@ public partial class SAV_Misc3 : Form
         }
 
         // check for space
-        int end = Array.FindIndex(p.Items, z => z.Index == 0);
+        int end = Array.FindIndex(p.Items, static z => z.Index == 0);
         if (end + missing.Count >= p.Items.Length)
         {
             WinFormsUtil.Alert("Not enough space in pouch.", "Please use the InventoryEditor.");

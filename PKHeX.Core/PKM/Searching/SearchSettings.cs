@@ -13,7 +13,7 @@ public sealed class SearchSettings
 {
     public int Format { get; init; }
     public int Generation { get; init; }
-    public int Species { get; init; } = -1;
+    public ushort Species { get; init; }
     public int Ability { get; init; } = -1;
     public int Nature { get; init; } = -1;
     public int Item { get; init; } = -1;
@@ -36,7 +36,7 @@ public sealed class SearchSettings
     public IList<string> BatchInstructions { get; init; } = Array.Empty<string>();
     private StringInstruction[] BatchFilters { get; set; } = Array.Empty<StringInstruction>();
 
-    public readonly List<int> Moves = new();
+    public readonly List<ushort> Moves = new();
 
     // ReSharper disable once CollectionNeverUpdated.Global
     /// <summary>
@@ -49,9 +49,9 @@ public sealed class SearchSettings
     /// Adds a move to the required move list.
     /// </summary>
     /// <param name="move"></param>
-    public void AddMove(int move)
+    public void AddMove(ushort move)
     {
-        if (move > 0 && !Moves.Contains(move))
+        if (move != 0 && !Moves.Contains(move))
             Moves.Add(move);
     }
 
@@ -144,7 +144,7 @@ public sealed class SearchSettings
     {
         if (Format > 0 && !SearchUtil.SatisfiesFilterFormat(pk, Format, SearchFormat))
             return false;
-        if (Species > -1 && pk.Species != Species)
+        if (Species != 0 && pk.Species != Species)
             return false;
         if (Ability > -1 && pk.Ability != Ability)
             return false;
@@ -159,23 +159,33 @@ public sealed class SearchSettings
 
     private bool SearchIntermediate(PKM pk)
     {
-        if (Generation > 0 && !SearchUtil.SatisfiesFilterGeneration(pk, Generation)) return false;
-        if (Moves.Count > 0 && !SearchUtil.SatisfiesFilterMoves(pk, Moves)) return false;
-        if (HiddenPowerType > -1 && pk.HPType != HiddenPowerType) return false;
-        if (SearchShiny != null && pk.IsShiny != SearchShiny) return false;
+        if (Generation > 0 && !SearchUtil.SatisfiesFilterGeneration(pk, Generation))
+            return false;
+        if (Moves.Count > 0 && !SearchUtil.SatisfiesFilterMoves(pk, Moves))
+            return false;
+        if (HiddenPowerType > -1 && pk.HPType != HiddenPowerType)
+            return false;
+        if (SearchShiny != null && pk.IsShiny != SearchShiny)
+            return false;
 
-        if (IVType > 0 && !SearchUtil.SatisfiesFilterIVs(pk, IVType)) return false;
-        if (EVType > 0 && !SearchUtil.SatisfiesFilterEVs(pk, EVType)) return false;
+        if (IVType > 0 && !SearchUtil.SatisfiesFilterIVs(pk, IVType))
+            return false;
+        if (EVType > 0 && !SearchUtil.SatisfiesFilterEVs(pk, EVType))
+            return false;
 
         return true;
     }
 
     private bool SearchComplex(PKM pk)
     {
-        if (SearchEgg != null && !FilterResultEgg(pk)) return false;
-        if (Level is { } x and not 0 && !SearchUtil.SatisfiesFilterLevel(pk, SearchLevel, x)) return false;
-        if (SearchLegal != null && new LegalityAnalysis(pk).Valid != SearchLegal) return false;
-        if (BatchFilters.Length != 0 && !SearchUtil.SatisfiesFilterBatchInstruction(pk, BatchFilters)) return false;
+        if (SearchEgg != null && !FilterResultEgg(pk))
+            return false;
+        if (Level is { } x and not 0 && !SearchUtil.SatisfiesFilterLevel(pk, SearchLevel, x))
+            return false;
+        if (SearchLegal != null && new LegalityAnalysis(pk).Valid != SearchLegal)
+            return false;
+        if (BatchFilters.Length != 0 && !SearchUtil.SatisfiesFilterBatchInstruction(pk, BatchFilters))
+            return false;
 
         return true;
     }

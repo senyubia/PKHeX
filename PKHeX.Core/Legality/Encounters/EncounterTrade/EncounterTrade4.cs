@@ -1,4 +1,4 @@
-﻿namespace PKHeX.Core;
+namespace PKHeX.Core;
 
 /// <summary>
 /// Generation 4 Trade Encounter
@@ -7,6 +7,7 @@
 public abstract record EncounterTrade4(GameVersion Version) : EncounterTrade(Version)
 {
     public sealed override int Generation => 4;
+    public override EntityContext Context => EntityContext.Gen4;
 
     protected static readonly string[] RanchOTNames = { string.Empty, "ユカリ", "Hayley", "EULALIE", "GIULIA", "EUKALIA", string.Empty, "Eulalia" };
 }
@@ -15,7 +16,7 @@ public abstract record EncounterTrade4(GameVersion Version) : EncounterTrade(Ver
 /// Generation 4 Trade Encounter with a fixed PID value.
 /// </summary>
 /// <inheritdoc cref="EncounterTrade4"/>
-public sealed record EncounterTrade4PID : EncounterTrade4, IContestStats
+public sealed record EncounterTrade4PID : EncounterTrade4, IContestStatsReadOnly
 {
     /// <summary>
     /// Fixed <see cref="PKM.PID"/> value the encounter must have.
@@ -59,7 +60,7 @@ public sealed record EncounterTrade4PID : EncounterTrade4, IContestStats
         if (!base.IsMatchExact(pk, evo))
             return false;
 
-        if (pk is IContestStats s && s.IsContestBelow(this))
+        if (pk is IContestStatsReadOnly s && s.IsContestBelow(this))
             return false;
 
         return true;

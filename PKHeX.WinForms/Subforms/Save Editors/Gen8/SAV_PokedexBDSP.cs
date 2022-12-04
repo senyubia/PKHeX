@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -38,15 +38,16 @@ public partial class SAV_PokedexBDSP : Form
     }
 
     private bool editing;
-    private int species = -1;
+    private ushort species = ushort.MaxValue;
 
     private void ChangeCBSpecies(object sender, EventArgs e)
     {
-        if (editing) return;
+        if (editing)
+            return;
         SetEntry();
 
         editing = true;
-        species = (int)CB_Species.SelectedValue;
+        species = (ushort)WinFormsUtil.GetIndex(CB_Species);
         LB_Species.SelectedIndex = species - 1; // Since we don't allow index0 in combobox, everything is shifted by 1
         LB_Species.TopIndex = LB_Species.SelectedIndex;
         GetEntry();
@@ -55,12 +56,13 @@ public partial class SAV_PokedexBDSP : Form
 
     private void ChangeLBSpecies(object sender, EventArgs e)
     {
-        if (editing) return;
+        if (editing)
+            return;
         SetEntry();
 
         editing = true;
-        species = LB_Species.SelectedIndex + 1;
-        CB_Species.SelectedValue = species;
+        species = (ushort)(LB_Species.SelectedIndex + 1);
+        CB_Species.SelectedValue = (int)species;
         GetEntry();
         editing = false;
     }
@@ -93,10 +95,10 @@ public partial class SAV_PokedexBDSP : Form
         if (fc <= 0)
             return;
 
-        var forms = FormConverter.GetFormList(species, GameInfo.Strings.types, GameInfo.Strings.forms, Main.GenderSymbols, SAV.Generation).Take(fc).ToArray();
+        var forms = FormConverter.GetFormList(species, GameInfo.Strings.types, GameInfo.Strings.forms, Main.GenderSymbols, SAV.Context).Take(fc).ToArray();
         f1.Items.AddRange(forms);
         f2.Items.AddRange(forms);
-        for (int i = 0; i < f1.Items.Count; i++)
+        for (byte i = 0; i < f1.Items.Count; i++)
         {
             f1.SetItemChecked(i, Zukan.GetHasFormFlag(species, i, false));
             f2.SetItemChecked(i, Zukan.GetHasFormFlag(species, i, true));
@@ -105,7 +107,7 @@ public partial class SAV_PokedexBDSP : Form
 
     private void SetEntry()
     {
-        if (species < 0)
+        if (species > 493)
             return;
 
         Zukan.SetState(species, (ZukanState8b)CB_State.SelectedIndex);
@@ -123,7 +125,7 @@ public partial class SAV_PokedexBDSP : Form
 
         var f1 = CLB_FormRegular;
         var f2 = CLB_FormShiny;
-        for (int i = 0; i < f1.Items.Count; i++)
+        for (byte i = 0; i < f1.Items.Count; i++)
         {
             Zukan.SetHasFormFlag(species, i, false, f1.GetItemChecked(i));
             Zukan.SetHasFormFlag(species, i, true , f2.GetItemChecked(i));
